@@ -1,0 +1,2175 @@
+---
+import "leaflet/dist/leaflet.css";
+import "leaflet-draw/dist/leaflet.draw.css";
+import '../styles/maps.css';
+
+export interface Props {
+  planet: string;
+  planetConfig?: any;
+  initialZoom?: number;
+  initialCenter?: [number, number];
+}
+
+const {
+  planet,
+  planetConfig,
+  initialZoom = 1,
+  initialCenter = [0, 180],
+} = Astro.props;
+---
+
+<body>
+  <div class="header">
+    <div class="logo">
+      <i class="fas fa-rocket"></i>
+      NASA Satellite Explorer - {planet.toUpperCase()}
+    </div>
+    <div class="search-container">
+      <input
+        type="text"
+        class="search-input"
+        placeholder={`Explorar ${planet}...`}
+        id="mainSearch"
+      />
+      <button class="search-btn" id="searchBtn">
+        <i class="fas fa-search"></i>
+      </button>
+    </div>
+    <div class="controls">
+      <button class="control-btn" id="fullscreenBtn">
+        <i class="fas fa-expand"></i>
+        Pantalla completa
+      </button>
+      <button class="control-btn" id="helpBtn">
+        <i class="fas fa-question-circle"></i>
+        Ayuda
+      </button>
+    </div>
+  </div>
+
+  <div class="main-container">
+    <div class="sidebar">
+      <div class="section">
+        <div class="section-title">
+          <i class="fas fa-layer-group"></i>
+          Capas de {planet.charAt(0).toUpperCase() + planet.slice(1)}
+        </div>
+        <div id="layersList">
+          <!-- Se genera dinámicamente según el planeta -->
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">
+          <i class="fas fa-map-marker-alt"></i>
+          Navegación por Coordenadas
+        </div>
+        <div class="coordinates-input">
+          <input
+            type="number"
+            class="coord-input"
+            placeholder="Latitud"
+            id="latInput"
+            step="any"
+          />
+          <input
+            type="number"
+            class="coord-input"
+            placeholder="Longitud"
+            id="lngInput"
+            step="any"
+          />
+        </div>
+        <button class="control-btn" style="width: 100%;" id="goToCoords">
+          <i class="fas fa-crosshairs"></i>
+          Ir a Coordenadas
+        </button>
+      </div>
+
+      <!-- Nueva sección para anotaciones -->
+      <div class="section">
+        <div class="section-title">
+          <i class="fas fa-edit"></i>
+          Anotaciones
+        </div>
+        <div class="annotation-controls">
+          <button
+            class="control-btn annotation-btn"
+            id="saveAnnotationsBtn"
+            title="Guardar anotaciones"
+          >
+            <i class="fas fa-save"></i> Guardar
+          </button>
+          <button
+            class="control-btn annotation-btn"
+            id="loadAnnotationsBtn"
+            title="Cargar anotaciones"
+          >
+            <i class="fas fa-folder-open"></i> Cargar
+          </button>
+          <button
+            class="control-btn annotation-btn"
+            id="clearAnnotationsBtn"
+            title="Borrar anotaciones"
+          >
+            <i class="fas fa-trash"></i> Borrar
+          </button>
+        </div>
+        <div class="bookmark-section">
+          <div class="section-subtitle">Marcadores guardados</div>
+          <div id="savedMarkersList" class="saved-markers-list">
+            <!-- Lista de marcadores guardados -->
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">
+          <i class="fas fa-robot"></i>
+          Búsqueda IA
+        </div>
+        <div class="ai-search-container">
+          <textarea
+            class="ai-input"
+            placeholder={`Busca características en ${planet}: 'tormentas', 'cráteres', 'volcanes'...`}
+            id="aiSearch"></textarea>
+          <button
+            class="control-btn"
+            style="width: 100%; margin-top: 12px;"
+            id="aiSearchBtn"
+          >
+            <i class="fas fa-brain"></i>
+            Buscar con IA
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="map-container">
+      <div
+        id="map"
+        data-planet={planet}
+        data-config={JSON.stringify(planetConfig)}
+      >
+      </div>
+      <div class="map-overlay">
+        <button class="overlay-btn" id="drawBtn" title="Herramientas de dibujo">
+          <i class="fas fa-pen"></i>
+        </button>
+        <button
+          class="overlay-btn"
+          id="measureBtn"
+          title="Herramienta de medición"
+        >
+          <i class="fas fa-ruler"></i>
+        </button>
+        <button class="overlay-btn" id="exportBtn" title="Exportar vista">
+          <i class="fas fa-download"></i>
+        </button>
+        <button class="overlay-btn" id="infoBtn" title="Info de capas">
+          <i class="fas fa-info"></i>
+        </button>
+        <button class="overlay-btn" id="colorFiltersBtn" title="Filtros">
+          <i class="fas fa-sliders"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="status-bar">
+    <div>
+      Lat: <span id="currentLat">0.000</span>, Lng: <span id="currentLng"
+        >0.000</span
+      >
+      | Zoom: <span id="currentZoom">2</span> | Capas activas: <span
+        id="activeLayers">1</span
+      >
+    </div>
+    <div>
+      Planeta: {planet.toUpperCase()} | Datos: NASA/USGS/ESA | Última actualización:
+      <span id="lastUpdate">2024</span>
+    </div>
+  </div>
+
+  <div class="loading" id="loadingIndicator" style="display: none;">
+    <div class="spinner"></div>
+  </div>
+
+  <div class="floating-panel" id="infoPanel" style="display: none;">
+    <button class="close-btn" id="closePanelBtn">&times;</button>
+    <div id="imageInfo"></div>
+  </div>
+
+  <!-- Modal para nombrar marcadores -->
+  <div id="markerModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <span class="modal-close">&times;</span>
+      <h3>Bookmark name</h3>
+      <input type="text" id="markerNameInput" placeholder="Bookmark name" />
+      <textarea id="markerDescInput" placeholder="Description (optional)"
+      ></textarea>
+      <input type="text" id="mediaInput" placeholder="URL media (optional)" />
+      <button id="saveMarkerBtn" class="control-btn">Save</button>
+    </div>
+  </div>
+</body>
+
+<script>
+import L from "leaflet";
+// Capture hash from client side
+const params = new URLSearchParams(window.location.search);
+const hash = params.get("hash");
+// Direct credentials for testing
+
+console.log(hash);
+
+// Ensure Leaflet is fully loaded
+document.addEventListener("DOMContentLoaded", () => {
+  if (typeof L !== "undefined") {
+    // Only then dynamically load Leaflet.draw
+    import("leaflet-draw").then(() => {
+      // Start your SatelliteMapManager code here
+      const mapContainer = document.getElementById("map");
+      if (mapContainer) {
+        const planet = mapContainer.dataset.planet || "mars";
+        const configData = mapContainer.dataset.config;
+        let planetConfig = null;
+
+        try {
+          if (configData) {
+            planetConfig = JSON.parse(configData);
+          }
+        } catch (e) {
+          console.warn("Error parsing planet config:", e);
+        }
+
+        const satelliteMap = new SatelliteMapManager(planet, planetConfig);
+        satelliteMap.init();
+        window.satelliteMap = satelliteMap;
+      }
+    });
+  } else {
+    console.error("Leaflet is not available");
+  }
+});
+
+class SatelliteMapManager {
+  constructor(planet = "mars", planetConfig = null) {
+    this.planet = planet.toLowerCase();
+    this.planetConfig = planetConfig;
+    this.map = null;
+    this.currentLayers = {};
+    this.markers = [];
+    this.isFullscreen = false;
+    this.layerCache = new Map();
+    this.drawnItems = null;
+    this.drawControl = null;
+    this.drawControlActive = false;
+    this.temporaryMarker = null;
+    this.savedAnnotations = {
+      markers: [],
+      polygons: [],
+      polylines: [],
+      circles: [],
+      rectangles: [],
+    };
+
+    // Planet-specific configurations
+    this.planetConfigs = {
+      mars: {
+        locations: {
+          "olympus mons": [-18.65, 226.2],
+          "valles marineris": [-14.0, 302.0],
+          "hellas planitia": [-42.4, 70.5],
+          "polar ice cap": [85.0, 0.0],
+        },
+        aiResponses: {
+          volcano: { coords: [-18.65, 226.2], name: "Olympus Mons" },
+          canyon: { coords: [-14.0, 302.0], name: "Valles Marineris" },
+          crater: { coords: [-42.4, 70.5], name: "Hellas Planitia" },
+          ice: { coords: [85.0, 0.0], name: "Polar Ice Cap" },
+        },
+      },
+      jupiter: {
+        locations: {
+          "great red spot": [-22.0, 25.0],
+          io: [0.0, 0.0],
+          europa: [0.0, 90.0],
+          ganymede: [0.0, 180.0],
+        },
+        aiResponses: {
+          storm: { coords: [-22.0, 25.0], name: "Great Red Spot" },
+          moon: { coords: [0.0, 0.0], name: "Io" },
+          ocean: { coords: [0.0, 90.0], name: "Europa" },
+          satellite: { coords: [0.0, 180.0], name: "Ganymede" },
+        },
+      },
+      saturn: {
+        locations: {
+          rings: [0.0, 0.0],
+          titan: [0.0, 90.0],
+          enceladus: [0.0, 180.0],
+        },
+        aiResponses: {
+          rings: { coords: [0.0, 0.0], name: "Saturn's Rings" },
+          titan: { coords: [0.0, 90.0], name: "Titan" },
+          geysers: { coords: [0.0, 180.0], name: "Enceladus" },
+        },
+      },
+    };
+
+    // Use planet-specific configuration
+    const config = this.planetConfigs[this.planet] || this.planetConfigs.mars;
+    this.locations = config.locations;
+    this.aiResponses = config.aiResponses;
+  }
+
+  // ✅ NEW: Method to generate media HTML
+  getMediaHTML(url, name = '') {
+    if (!url) return '';
+    
+    // Detect YouTube
+    if (url.includes('youtube.com') || url.includes('youtu.be')) {
+      let videoId = '';
+      
+      if (url.includes('youtube.com/watch?v=')) {
+        videoId = url.split('v=')[1]?.split('&')[0];
+      } else if (url.includes('youtu.be/')) {
+        videoId = url.split('youtu.be/')[1]?.split('?')[0];
+      } else if (url.includes('youtube.com/embed/')) {
+        videoId = url.split('embed/')[1]?.split('?')[0];
+      }
+      
+      if (videoId) {
+        return `
+          <div style="margin-top: 10px;">
+            <iframe 
+              width="100%" 
+              height="200" 
+              src="https://www.youtube.com/embed/${videoId}" 
+              frameborder="0" 
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+              allowfullscreen
+              style="border-radius: 6px;">
+            </iframe>
+          </div>
+        `;
+      }
+    }
+    
+    // Detect Vimeo
+    if (url.includes('vimeo.com')) {
+      const videoId = url.split('vimeo.com/')[1]?.split('?')[0];
+      if (videoId) {
+        return `
+          <div style="margin-top: 10px;">
+            <iframe 
+              width="100%" 
+              height="200" 
+              src="https://player.vimeo.com/video/${videoId}" 
+              frameborder="0" 
+              allow="autoplay; fullscreen; picture-in-picture" 
+              allowfullscreen
+              style="border-radius: 6px;">
+            </iframe>
+          </div>
+        `;
+      }
+    }
+    
+    // Detect image extensions
+    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp'];
+    const isImage = imageExtensions.some(ext => url.toLowerCase().includes(ext));
+    
+    if (isImage) {
+      return `
+        <div style="margin-top: 10px;">
+          <img 
+            src="${url}" 
+            alt="${name}"
+            style="width: 100%; max-height: 250px; object-fit: cover; border-radius: 6px; cursor: pointer; display: block;"
+            onclick="window.open('${url}', '_blank')"
+            onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+          />
+          <p style="display: none; color: #f44336; font-size: 12px; margin-top: 8px; text-align: center;">
+            ⚠️ Error loading image
+          </p>
+        </div>
+      `;
+    }
+    
+    // Detect video extensions
+    const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov'];
+    const isVideo = videoExtensions.some(ext => url.toLowerCase().includes(ext));
+    
+    if (isVideo) {
+      return `
+        <div style="margin-top: 10px;">
+          <video 
+            width="100%" 
+            height="200" 
+            controls 
+            style="border-radius: 6px;"
+            preload="metadata">
+            <source src="${url}" type="video/${url.split('.').pop()}">
+            Your browser does not support the video tag.
+          </video>
+        </div>
+      `;
+    }
+    
+    // If nothing detected, show as link
+    return `
+      <div style="margin-top: 10px; text-align: center;">
+        <a href="${url}" target="_blank" rel="noopener noreferrer" 
+           style="color: #2196F3; text-decoration: none; font-size: 14px; display: inline-block; padding: 8px 16px; background: #e3f2fd; border-radius: 4px;">
+          🔗 View external resource
+        </a>
+      </div>
+    `;
+  }
+
+  // ✅ NEW: Method to create marker popup
+  createMarkerPopup(name, desc, media) {
+    return `
+      <div class="marker-popup" style="min-width: 280px; max-width: 320px; font-family: system-ui, -apple-system, sans-serif;">
+        <h4 style="margin: 0 0 8px 0; font-size: 16px; color: #333; font-weight: 600;">
+          ${name}
+        </h4>
+        ${desc ? `<p style="margin: 6px 0; font-size: 14px; line-height: 1.4; color: #555;">${desc}</p>` : ""}
+        ${this.getMediaHTML(media, name)}
+      </div>
+    `;
+  }
+
+  async init() {
+    try {
+      if (typeof L === "undefined") {
+        console.log("Waiting for Leaflet to load...");
+        setTimeout(() => this.init(), 100);
+        return;
+      }
+
+      await this.loadLayerConfigs();
+      this.initColorFilterPlugin();
+      this.initMap();
+      this.setupEventListeners();
+      this.setupUI();
+      this.initDrawControl();
+      this.loadSavedAnnotations();
+
+      console.log(
+        `🛰️ ${this.planet.toUpperCase()} Satellite Explorer initialized successfully`,
+      );
+      this.showNotification(
+        `${this.planet} Explorer initialized successfully`,
+        "success",
+      );
+    } catch (error) {
+      console.error("Error initializing application:", error);
+      this.showNotification(
+        "❌ Error initializing map. Please reload the page.",
+        "error",
+      );
+    }
+  }
+
+  async loadLayerConfigs() {
+    if (this.planetConfig) {
+      this.layerConfigs = this.planetConfig;
+      return;
+    }
+
+    if (this.layerCache.has(this.planet)) {
+      this.layerConfigs = this.layerCache.get(this.planet);
+      return;
+    }
+
+    const url = `/planets/${this.planet}.json`;
+    try {
+      const res = await fetch(url, { cache: "no-cache" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      const data = await res.json();
+      this.layerCache.set(this.planet, data);
+      this.layerConfigs = data;
+    } catch (error) {
+      console.warn(`Could not load ${url}. Using default data.`);
+      this.layerConfigs = {
+        default: {
+          url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+          attribution: `${this.planet} base map`,
+          zoom: 5,
+          active: true,
+          name: `${this.planet} Base`,
+          description: "Base layer",
+        },
+      };
+      this.layerCache.set(this.planet, this.layerConfigs);
+    }
+  }
+
+  createLayersList() {
+    const layersListEl = this.getElement("layersList");
+    if (!layersListEl) return;
+
+    layersListEl.innerHTML = Object.keys(this.currentLayers)
+      .map((layerName) => {
+        const config = this.currentLayers[layerName];
+        return `
+              <div class="layer-item ${config.active ? "active" : ""}" data-layer="${layerName}">
+                  <div class="layer-info">
+                      <div class="layer-name">${config.name || layerName}</div>
+                      <div class="layer-desc">${config.description || "Satellite layer"}</div>
+                  </div>
+                  <input type="range" class="opacity-slider" min="0" max="1" step="0.1" value="1">
+              </div>
+          `;
+      })
+      .join("");
+
+    layersListEl.addEventListener("click", (e) => {
+      const layerItem = e.target.closest(".layer-item");
+      if (layerItem && !e.target.classList.contains("opacity-slider")) {
+        const layerName = layerItem.dataset.layer;
+        if (layerName) this.toggleLayer(layerName);
+      }
+    });
+
+    layersListEl.addEventListener("input", (e) => {
+      if (e.target.classList.contains("opacity-slider")) {
+        const layerName = e.target.closest(".layer-item").dataset.layer;
+        if (layerName) this.setLayerOpacity(layerName, e.target.value);
+      }
+    });
+  }
+
+  initColorFilterPlugin() {
+    if (!window.L) return;
+
+    L.TileLayer.ColorFilter = L.TileLayer.extend({
+      initialize: function (url, options) {
+        L.TileLayer.prototype.initialize.call(this, url, options);
+        this._filters = options.filter || [];
+      },
+      onAdd: function (map) {
+        L.TileLayer.prototype.onAdd.call(this, map);
+        this._applyContainerFilter();
+      },
+      updateFilter: function (newFilters) {
+        this._filters = newFilters || [];
+        this._applyContainerFilter();
+      },
+      _applyContainerFilter: function () {
+        if (!this._container) return;
+        const filterString = this._filters.join(" ");
+        this._container.style.filter = filterString;
+        const tiles = this._container.querySelectorAll("img");
+        for (let i = 0; i < tiles.length; i++) {
+          tiles[i].style.filter = filterString;
+        }
+      },
+    });
+
+    L.tileLayer.colorFilter = function (url, options) {
+      return new L.TileLayer.ColorFilter(url, options);
+    };
+  }
+
+  initMap() {
+    this.map = L.map("map", {
+      center: [0, 180],
+      zoom: 1,
+      zoomControl: false,
+      preferCanvas: true,
+      attributionControl: false,
+    });
+
+    L.control.zoom({ position: "bottomleft" }).addTo(this.map);
+
+    Object.keys(this.layerConfigs).forEach((key) => {
+      const config = this.layerConfigs[key];
+
+      config.layer = L.tileLayer.colorFilter(config.url, {
+        attribution: config.attribution || "",
+        minZoom: 1,
+        maxZoom: 7,
+        maxNativeZoom: config.zoom || 5,
+        noWrap: true,
+        crossOrigin: true,
+        filter: [
+          "hue-rotate(0deg)",
+          "contrast(100%)",
+          "brightness(100%)",
+          "saturate(100%)",
+        ],
+      });
+
+      this.currentLayers[key] = config;
+      if (config.active) {
+        config.layer.addTo(this.map);
+      }
+    });
+
+    this.drawnItems = new L.FeatureGroup();
+    this.map.addLayer(this.drawnItems);
+
+    this.setupMapEventListeners();
+    this.updateActiveLayersCount();
+    this.updateMapInfo();
+    this.createLayersList();
+  }
+
+  initDrawControl() {
+    this.drawControl = new L.Control.Draw({
+      position: "topleft",
+      draw: {
+        polyline: {
+          shapeOptions: {
+            color: "#f357a1",
+            weight: 3,
+          },
+        },
+        polygon: {
+          allowIntersection: false,
+          drawError: {
+            color: "#e1e100",
+            message:
+              "<strong>Error!</strong> You cannot draw intersecting polygons.",
+          },
+          shapeOptions: {
+            color: "#3388ff",
+          },
+        },
+        circle: {
+          shapeOptions: {
+            color: "#f5b60a",
+          },
+        },
+        rectangle: {
+          shapeOptions: {
+            color: "#49c32c",
+          },
+        },
+        marker: true,
+      },
+      edit: {
+        featureGroup: this.drawnItems,
+        poly: {
+          allowIntersection: false,
+        },
+      },
+    });
+
+    this.map.on(L.Draw.Event.CREATED, (event) => {
+      const layer = event.layer;
+
+      if (event.layerType === "marker") {
+        this.temporaryMarker = layer;
+        this.openMarkerModal();
+      } else {
+        this.drawnItems.addLayer(layer);
+        this.showNotification("Element added to map", "success");
+      }
+    });
+
+    this.map.on(L.Draw.Event.EDITED, (e) => {
+      const layers = e.layers;
+      layers.eachLayer((layer) => {
+        if (layer.options.title) {
+          this.updateSavedMarker(layer);
+        }
+      });
+      this.showNotification("Elements edited successfully", "info");
+    });
+
+    this.map.on(L.Draw.Event.DELETED, (e) => {
+      const layers = e.layers;
+      layers.eachLayer((layer) => {
+        if (layer.options.title) {
+          this.removeSavedMarker(layer);
+        }
+      });
+      this.showNotification("Elements deleted successfully", "info");
+    });
+  }
+
+  toggleDrawControls() {
+    if (this.drawControlActive) {
+      this.map.removeControl(this.drawControl);
+      this.drawControlActive = false;
+      this.showNotification("Drawing tools deactivated", "info");
+    } else {
+      this.map.addControl(this.drawControl);
+      this.drawControlActive = true;
+      this.showNotification("Drawing tools activated", "success");
+    }
+  }
+
+  openMarkerModal() {
+    const modal = this.getElement("markerModal");
+    const closeBtn = modal.querySelector(".modal-close");
+    const saveBtn = this.getElement("saveMarkerBtn");
+    const nameInput = this.getElement("markerNameInput");
+    const descInput = this.getElement("markerDescInput");
+    const mediaInput = this.getElement("mediaInput");
+
+    nameInput.value = "";
+    descInput.value = "";
+    mediaInput.value = "";
+
+    modal.style.display = "block";
+    nameInput.focus();
+
+    closeBtn.onclick = () => {
+      modal.style.display = "none";
+      if (this.temporaryMarker) {
+        this.map.removeLayer(this.temporaryMarker);
+        this.temporaryMarker = null;
+      }
+    };
+
+    // ✅ UPDATED: Use createMarkerPopup method
+    saveBtn.onclick = () => {
+      const name = nameInput.value.trim();
+      const desc = descInput.value.trim();
+      const media = mediaInput.value.trim();
+
+      if (name) {
+        if (this.temporaryMarker) {
+          this.temporaryMarker.options.title = name;
+          this.temporaryMarker.options.description = desc;
+          this.temporaryMarker.options.media = media;
+
+          const popupContent = this.createMarkerPopup(name, desc, media);
+
+          this.temporaryMarker.bindPopup(popupContent, {
+            maxWidth: 340,
+            minWidth: 280,
+            className: 'custom-marker-popup'
+          });
+
+          this.drawnItems.addLayer(this.temporaryMarker);
+          this.addSavedMarker(this.temporaryMarker);
+
+          this.showNotification(`Marker "${name}" saved`, "success");
+          this.temporaryMarker = null;
+        }
+      } else {
+        this.showNotification("The marker needs a name", "error");
+        return;
+      }
+
+      modal.style.display = "none";
+    };
+  }
+
+  escapeHtml(text) {
+    if (!text) return "";
+    const div = document.createElement("div");
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  generateHash(length = 10) {
+    const chars =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let result = "";
+    for (let i = 0; i < length; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+  }
+
+  addSavedMarker(marker) {
+    const markersList = this.getElement("savedMarkersList");
+    if (!markersList) return;
+
+    const markerId = "marker-" + Date.now();
+    marker._id = markerId;
+
+    const markerItem = document.createElement("div");
+    markerItem.className = "saved-marker";
+    markerItem.dataset.id = markerId;
+    markerItem.innerHTML = `
+      <span class="marker-name">${marker.options.title}</span>
+      <div class="marker-actions">
+        <button class="marker-btn goto-btn" title="Go to marker">
+          <i class="fas fa-crosshairs"></i>
+        </button>
+        <button class="marker-btn delete-btn" title="Delete marker">
+          <i class="fas fa-trash"></i>
+        </button>
+      </div>
+    `;
+
+    markersList.appendChild(markerItem);
+
+    const gotoBtn = markerItem.querySelector(".goto-btn");
+    const deleteBtn = markerItem.querySelector(".delete-btn");
+
+    gotoBtn.addEventListener("click", () => {
+      this.map.setView(marker.getLatLng(), 10);
+      marker.openPopup();
+    });
+
+    deleteBtn.addEventListener("click", () => {
+      this.drawnItems.removeLayer(marker);
+      markerItem.remove();
+      this.showNotification(
+        `Marker "${marker.options.title}" deleted`,
+        "info",
+      );
+    });
+  }
+
+  updateSavedMarker(marker) {
+    if (marker._id) {
+      const markerItem = document.querySelector(
+        `.saved-marker[data-id="${marker._id}"]`,
+      );
+      if (markerItem) {
+        markerItem.querySelector(".marker-name").textContent =
+          marker.options.title;
+      }
+    }
+  }
+
+  removeSavedMarker(marker) {
+    if (marker._id) {
+      const markerItem = document.querySelector(
+        `.saved-marker[data-id="${marker._id}"]`,
+      );
+      if (markerItem) {
+        markerItem.remove();
+      }
+    }
+  }
+
+  // ✅ UPDATED: Also sanitize media field
+  saveAnnotations() {
+    this.showLoading(true);
+    try {
+      const annotations = {
+        planet: this.planet,
+        date: new Date().toISOString(),
+        features: [],
+      };
+
+      this.drawnItems.eachLayer((layer) => {
+        let feature = {
+          type: "",
+          properties: {},
+          geometry: {},
+        };
+
+        if (layer instanceof L.Marker) {
+          feature.type = "marker";
+          feature.geometry = {
+            lat: layer.getLatLng().lat,
+            lng: layer.getLatLng().lng,
+          };
+          feature.properties = {
+            title: layer.options.title || "Untitled",
+            description: layer.options.description || "",
+            media: layer.options.media || "",
+          };
+        } else if (layer instanceof L.Polygon) {
+          feature.type = "polygon";
+          feature.geometry = {
+            coordinates: layer
+              .getLatLngs()[0]
+              .map((latLng) => [latLng.lat, latLng.lng]),
+          };
+          feature.properties = {
+            color: layer.options.color,
+            fillColor: layer.options.fillColor,
+            fillOpacity: layer.options.fillOpacity,
+          };
+        } else if (layer instanceof L.Polyline) {
+          feature.type = "polyline";
+          feature.geometry = {
+            coordinates: layer
+              .getLatLngs()
+              .map((latLng) => [latLng.lat, latLng.lng]),
+          };
+          feature.properties = {
+            color: layer.options.color,
+            weight: layer.options.weight,
+          };
+        } else if (layer instanceof L.Circle) {
+          feature.type = "circle";
+          feature.geometry = {
+            center: [layer.getLatLng().lat, layer.getLatLng().lng],
+            radius: layer.getRadius(),
+          };
+          feature.properties = {
+            color: layer.options.color,
+            fillColor: layer.options.fillColor,
+            fillOpacity: layer.options.fillOpacity,
+          };
+        } else if (layer instanceof L.Rectangle) {
+          const bounds = layer.getBounds();
+          feature.type = "rectangle";
+          feature.geometry = {
+            bounds: [
+              [bounds.getSouth(), bounds.getWest()],
+              [bounds.getNorth(), bounds.getEast()],
+            ],
+          };
+          feature.properties = {
+            color: layer.options.color,
+            fillColor: layer.options.fillColor,
+            fillOpacity: layer.options.fillOpacity,
+          };
+        }
+
+        annotations.features.push(feature);
+      });
+
+      const key = `satellite_annotations_${this.planet}`;
+      localStorage.setItem(key, JSON.stringify(annotations));
+
+      const params = new URLSearchParams(window.location.search);
+      let hash = params.get("hash");
+      if (!hash) {
+        hash = this.generateHash(10);
+        const newUrl = new URL(window.location);
+        newUrl.searchParams.set("hash", hash);
+        window.history.pushState({}, "", newUrl);
+      }
+
+      if (hash) {
+        const SUPABASE_URL = import.meta.env.PUBLIC_SUPABASE_URL;
+        const SUPABASE_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+
+        // ✅ UPDATED: Also sanitize media
+        const sanitized = {
+          ...annotations,
+          features: annotations.features.map((f) => ({
+            ...f,
+            properties: {
+              ...f.properties,
+              title: this.escapeHtml(f.properties?.title || "").substring(0, 100),
+              description: this.escapeHtml(f.properties?.description || "").substring(0, 500),
+              media: this.escapeHtml(f.properties?.media || "").substring(0, 500),
+            },
+          })),
+        };
+
+        fetch(`${SUPABASE_URL}/rest/v1/NASA-maps?hash=eq.${hash}`, {
+          headers: {
+            apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${SUPABASE_KEY}`,
+          },
+        })
+          .then((response) => response.json())
+          .then((existingRecords) => {
+            console.log("Records found:", existingRecords.length);
+
+            if (existingRecords.length > 0) {
+              console.log("🔄 Updating existing record");
+              return fetch(
+                `${SUPABASE_URL}/rest/v1/NASA-maps?hash=eq.${hash}`,
+                {
+                  method: "PATCH",
+                  headers: {
+                    apikey: SUPABASE_KEY,
+                    Authorization: `Bearer ${SUPABASE_KEY}`,
+                    "Content-Type": "application/json",
+                    Prefer: "return=representation",
+                  },
+                  body: JSON.stringify({
+                    map: sanitized,
+                  }),
+                },
+              );
+            } else {
+              console.log("➕ Creating new record");
+              return fetch(`${SUPABASE_URL}/rest/v1/NASA-maps`, {
+                method: "POST",
+                headers: {
+                  apikey: SUPABASE_KEY,
+                  Authorization: `Bearer ${SUPABASE_KEY}`,
+                  "Content-Type": "application/json",
+                  Prefer: "return=representation",
+                },
+                body: JSON.stringify({
+                  hash: hash,
+                  map: sanitized,
+                }),
+              });
+            }
+          })
+          .then((response) => {
+            if (response.ok) {
+              console.log("✅ Saved to Supabase");
+              this.showNotification(
+                "Map saved locally and to cloud",
+                "success",
+              );
+              this.showSharePopup();
+            } else {
+              return response.text().then((text) => {
+                console.error("❌ Error saving to Supabase:", text);
+                this.showNotification(
+                  "Saved locally (cloud error)",
+                  "warning",
+                );
+              });
+            }
+            this.showLoading(false);
+          })
+          .catch((error) => {
+            console.error("❌ Network error:", error);
+            this.showNotification(
+              "Saved locally (no connection)",
+              "warning",
+            );
+            this.showLoading(false);
+          });
+      } else {
+        setTimeout(() => {
+          this.showLoading(false);
+          this.showNotification(
+            "Annotations saved locally",
+            "success",
+          );
+        }, 500);
+      }
+    } catch (error) {
+      console.error("Error saving annotations:", error);
+      this.showLoading(false);
+      this.showNotification("Error saving annotations", "error");
+    }
+  }
+
+  // ✅ UPDATED: Load and display media field in popups
+  async loadSavedAnnotations() {
+    const key = `satellite_annotations_${this.planet}`;
+    const params = new URLSearchParams(window.location.search);
+    const hash = params.get("hash");
+    const SUPABASE_URL = import.meta.env.PUBLIC_SUPABASE_URL;
+    const SUPABASE_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+
+    let annotations = null;
+
+    if (hash) {
+      try {
+        const response = await fetch(
+          `${SUPABASE_URL}/rest/v1/NASA-maps?hash=eq.${hash}`,
+          {
+            headers: {
+              apikey: SUPABASE_KEY,
+              Authorization: `Bearer ${SUPABASE_KEY}`,
+              "Content-Type": "application/json",
+            },
+          },
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+
+          if (data && data.length > 0) {
+            let mapData = data[0].map;
+
+            if (typeof mapData === "string") {
+              annotations = JSON.parse(mapData);
+            } else {
+              annotations = mapData;
+            }
+
+            console.log("✅ Map loaded from Supabase");
+          }
+        }
+      } catch (error) {
+        console.error("Error loading from Supabase:", error);
+      }
+    }
+
+    if (!annotations || !annotations.features) return;
+
+    try {
+      this.drawnItems.clearLayers();
+      const markersList = this.getElement("savedMarkersList");
+      if (markersList) markersList.innerHTML = "";
+
+      annotations.features.forEach((feature) => {
+        let layer;
+
+        switch (feature.type) {
+          case "marker":
+            layer = L.marker([feature.geometry.lat, feature.geometry.lng], {
+              title: feature.properties.title,
+              description: feature.properties.description,
+              media: feature.properties.media || "", // ✅
+            });
+
+            // ✅ UPDATED: Use createMarkerPopup to include media
+            const popupContent = this.createMarkerPopup(
+              feature.properties.title,
+              feature.properties.description,
+              feature.properties.media
+            );
+
+            layer.bindPopup(popupContent, {
+              maxWidth: 340,
+              minWidth: 280,
+            });
+
+            this.drawnItems.addLayer(layer);
+            this.addSavedMarker(layer);
+            break;
+
+          case "polygon":
+            layer = L.polygon(feature.geometry.coordinates, {
+              color: feature.properties.color,
+              fillColor: feature.properties.fillColor,
+              fillOpacity: feature.properties.fillOpacity,
+            });
+            this.drawnItems.addLayer(layer);
+            break;
+
+          case "polyline":
+            layer = L.polyline(feature.geometry.coordinates, {
+              color: feature.properties.color,
+              weight: feature.properties.weight,
+            });
+            this.drawnItems.addLayer(layer);
+            break;
+
+          case "circle":
+            layer = L.circle(feature.geometry.center, {
+              radius: feature.geometry.radius,
+              color: feature.properties.color,
+              fillColor: feature.properties.fillColor,
+              fillOpacity: feature.properties.fillOpacity,
+            });
+            this.drawnItems.addLayer(layer);
+            break;
+
+          case "rectangle":
+            layer = L.rectangle(feature.geometry.bounds, {
+              color: feature.properties.color,
+              fillColor: feature.properties.fillColor,
+              fillOpacity: feature.properties.fillOpacity,
+            });
+            this.drawnItems.addLayer(layer);
+            break;
+        }
+      });
+
+      const source = hash ? "Supabase" : "localStorage";
+      this.showNotification(
+        `Loaded ${annotations.features.length} annotations from ${source}`,
+        "success",
+      );
+    } catch (error) {
+      console.error("Error loading annotations:", error);
+      this.showNotification("Error loading saved annotations", "error");
+    }
+  }
+
+  clearAllAnnotations() {
+    if (!this.drawnItems || this.drawnItems.getLayers().length === 0) {
+      this.showNotification("No annotations to delete", "info");
+      return;
+    }
+
+    if (
+      confirm("Are you sure you want to delete all annotations?")
+    ) {
+      this.drawnItems.clearLayers();
+      const markersList = this.getElement("savedMarkersList");
+      if (markersList) markersList.innerHTML = "";
+
+      const key = `satellite_annotations_${this.planet}`;
+      localStorage.removeItem(key);
+
+      this.showNotification(
+        "All annotations have been deleted",
+        "info",
+      );
+    }
+  }
+
+  exportViewWithAnnotations() {
+    this.showNotification(
+      `Exporting ${this.planet} view with annotations...`,
+      "info",
+    );
+    this.showLoading(true);
+
+    setTimeout(() => {
+      const annotations = [];
+
+      this.drawnItems.eachLayer((layer) => {
+        if (layer instanceof L.Marker && layer.options.title) {
+          annotations.push({
+            type: "Marker",
+            name: layer.options.title,
+            coords: `${layer.getLatLng().lat.toFixed(4)}, ${layer.getLatLng().lng.toFixed(4)}`,
+          });
+        } else if (layer instanceof L.Circle) {
+          annotations.push({
+            type: "Circle",
+            radius: `${(layer.getRadius() / 1000).toFixed(1)} km`,
+            coords: `${layer.getLatLng().lat.toFixed(4)}, ${layer.getLatLng().lng.toFixed(4)}`,
+          });
+        } else if (layer instanceof L.Polygon) {
+          annotations.push({ type: "Polygon" });
+        } else if (layer instanceof L.Polyline) {
+          annotations.push({ type: "Line" });
+        } else if (layer instanceof L.Rectangle) {
+          annotations.push({ type: "Rectangle" });
+        }
+      });
+
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      canvas.width = 500;
+      canvas.height = 400;
+
+      ctx.fillStyle = "#0c1220";
+      ctx.fillRect(0, 0, 500, 400);
+
+      ctx.fillStyle = "#3b82f6";
+      ctx.font = "bold 20px Arial";
+      ctx.fillText(
+        `${this.planet.toUpperCase()} Explorer - Annotations`,
+        20,
+        40,
+      );
+
+      ctx.font = "14px Arial";
+      ctx.fillStyle = "#94a3b8";
+      ctx.fillText(
+        `Center: ${this.map.getCenter().lat.toFixed(2)}, ${this.map.getCenter().lng.toFixed(2)}`,
+        20,
+        70,
+      );
+      ctx.fillText(`Zoom: ${this.map.getZoom()}`, 20, 90);
+
+      if (annotations.length > 0) {
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 16px Arial";
+        ctx.fillText("Annotations:", 20, 130);
+
+        ctx.font = "14px Arial";
+        let y = 160;
+        annotations.slice(0, 10).forEach((ann) => {
+          let text = `• ${ann.type}`;
+          if (ann.name) text += `: ${ann.name}`;
+          if (ann.coords) text += ` (${ann.coords})`;
+          if (ann.radius) text += ` - Radius: ${ann.radius}`;
+
+          ctx.fillText(text, 30, y);
+          y += 20;
+        });
+
+        if (annotations.length > 10) {
+          ctx.fillText(`... and ${annotations.length - 10} more`, 30, y);
+        }
+      } else {
+        ctx.fillStyle = "#94a3b8";
+        ctx.fillText("No annotations in this view", 20, 130);
+      }
+
+      ctx.fillStyle = "#64748b";
+      ctx.font = "12px Arial";
+      ctx.fillText(`Exported: ${new Date().toLocaleString()}`, 20, 380);
+
+      const link = document.createElement("a");
+      link.download = `${this.planet}-annotations-${Date.now()}.png`;
+      link.href = canvas.toDataURL();
+      link.click();
+
+      this.showLoading(false);
+      this.showNotification("View exported successfully", "success");
+    }, 1000);
+  }
+
+  setupMapEventListeners() {
+    this.map.on("mousemove", (e) => {
+      const { lat, lng } = e.latlng;
+      this.updateElement("currentLat", lat.toFixed(3));
+      this.updateElement("currentLng", lng.toFixed(3));
+    });
+
+    this.map.on("zoomend", () => {
+      this.updateElement("currentZoom", this.map.getZoom());
+    });
+
+    this.map.on("moveend", () => this.updateMapInfo());
+
+    this.map.on("contextmenu", (e) => {
+      e.originalEvent.preventDefault();
+
+      const menuContent = `
+        <div class="context-menu">
+          <div class="context-menu-item" id="addMarkerHere">
+            <i class="fas fa-map-marker-alt"></i> Add marker
+          </div>
+          <div class="context-menu-item" id="measureFromHere">
+            <i class="fas fa-ruler"></i> Measure from here
+          </div>
+          <div class="context-menu-item" id="clearAllMarkers">
+            <i class="fas fa-trash"></i> Clear markers
+          </div>
+        </div>
+      `;
+
+      const popup = L.popup()
+        .setLatLng(e.latlng)
+        .setContent(menuContent)
+        .openOn(this.map);
+
+      setTimeout(() => {
+        document
+          .getElementById("addMarkerHere")
+          ?.addEventListener("click", () => {
+            this.map.closePopup();
+            this.temporaryMarker = L.marker(e.latlng);
+            this.temporaryMarker.addTo(this.map);
+            this.openMarkerModal();
+          });
+
+        document
+          .getElementById("measureFromHere")
+          ?.addEventListener("click", () => {
+            this.map.closePopup();
+            this.startMeasurement(e.latlng);
+          });
+
+        document
+          .getElementById("clearAllMarkers")
+          ?.addEventListener("click", () => {
+            this.map.closePopup();
+            this.clearMarkers();
+          });
+      }, 100);
+    });
+
+    this.map.on("click", (e) => {
+      if (e.originalEvent.ctrlKey) {
+        this.addMarker(
+          e.latlng,
+          `Coordinates: ${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)}`,
+        );
+      }
+    });
+  }
+
+  setupEventListeners() {
+    this.addEventListener("searchBtn", "click", () => this.performSearch());
+    this.addEventListener("fullscreenBtn", "click", () =>
+      this.toggleFullscreen(),
+    );
+    this.addEventListener("helpBtn", "click", () => this.showHelp());
+    this.addEventListener("goToCoords", "click", () =>
+      this.goToCoordinates(),
+    );
+    this.addEventListener("aiSearchBtn", "click", () =>
+      this.performAISearch(),
+    );
+    this.addEventListener("closePanelBtn", "click", () =>
+      this.closeInfoPanel(),
+    );
+    this.addEventListener("drawBtn", "click", () =>
+      this.toggleDrawControls(),
+    );
+    this.addEventListener("measureBtn", "click", () =>
+      this.toggleMeasurement(),
+    );
+    this.addEventListener("exportBtn", "click", () =>
+      this.exportViewWithAnnotations(),
+    );
+    this.addEventListener("infoBtn", "click", () => this.showLayerInfo());
+    this.addEventListener("colorFiltersBtn", "click", () =>
+      this.openColorFilters(),
+    );
+    this.addEventListener("saveAnnotationsBtn", "click", () =>
+      this.saveAnnotations(),
+    );
+    this.addEventListener("loadAnnotationsBtn", "click", () =>
+      this.loadSavedAnnotations(),
+    );
+    this.addEventListener("clearAnnotationsBtn", "click", () =>
+      this.clearAllAnnotations(),
+    );
+
+    this.addEventListener("mainSearch", "keypress", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        this.performSearch();
+      }
+    });
+
+    ["latInput", "lngInput"].forEach((id) => {
+      this.addEventListener(id, "keypress", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          this.goToCoordinates();
+        }
+      });
+    });
+  }
+
+  toggleMeasurement() {
+    if (this.isMeasuring) {
+      this.stopMeasurement();
+      this.showNotification("Measurement deactivated", "info");
+    } else {
+      this.showNotification(
+        "Click on the map to start measuring",
+        "info",
+      );
+      this.startMeasurementMode();
+    }
+  }
+
+  startMeasurementMode() {
+    this.isMeasuring = true;
+    this.measurePoints = [];
+    this.measureLayer = null;
+
+    document.getElementById("map").style.cursor = "crosshair";
+
+    this.measureClickHandler = (e) => {
+      this.addMeasurePoint(e.latlng);
+    };
+
+    this.map.on("click", this.measureClickHandler);
+    document.getElementById("measureBtn").classList.add("active");
+  }
+
+  addMeasurePoint(latlng) {
+    this.measurePoints.push(latlng);
+
+    if (this.measurePoints.length === 1) {
+      this.measureStartMarker = L.marker(latlng, {
+        icon: L.divIcon({
+          className: "measure-marker start-marker",
+          html: '<i class="fas fa-ruler-horizontal"></i>',
+          iconSize: [20, 20],
+        }),
+      }).addTo(this.map);
+    }
+
+    if (this.measurePoints.length > 1) {
+      if (this.measureLayer) {
+        this.map.removeLayer(this.measureLayer);
+      }
+
+      this.measureLayer = L.polyline(this.measurePoints, {
+        color: "#ff4081",
+        weight: 3,
+        dashArray: "5, 10",
+        lineCap: "round",
+      }).addTo(this.map);
+
+      let totalDistance = 0;
+      for (let i = 1; i < this.measurePoints.length; i++) {
+        totalDistance += this.measurePoints[i - 1].distanceTo(
+          this.measurePoints[i],
+        );
+      }
+
+      let distanceStr;
+      if (totalDistance < 1000) {
+        distanceStr = `${totalDistance.toFixed(1)} m`;
+      } else {
+        distanceStr = `${(totalDistance / 1000).toFixed(2)} km`;
+      }
+
+      const midPoint = this.measurePoints[this.measurePoints.length - 1];
+
+      if (this.measureLabel) {
+        this.map.removeLayer(this.measureLabel);
+      }
+
+      this.measureLabel = L.marker(midPoint, {
+        icon: L.divIcon({
+          className: "measure-label",
+          html: `<div class="distance-bubble">${distanceStr}</div>`,
+          iconSize: [80, 30],
+          iconAnchor: [40, 15],
+        }),
+      }).addTo(this.map);
+    }
+  }
+
+  stopMeasurement() {
+    if (!this.isMeasuring) return;
+
+    this.isMeasuring = false;
+    document.getElementById("map").style.cursor = "";
+    document.getElementById("measureBtn").classList.remove("active");
+
+    if (this.measureClickHandler) {
+      this.map.off("click", this.measureClickHandler);
+    }
+
+    if (this.measureClearTimeout) clearTimeout(this.measureClearTimeout);
+
+    this.measureClearTimeout = setTimeout(() => {
+      if (this.measureStartMarker)
+        this.map.removeLayer(this.measureStartMarker);
+      if (this.measureLayer) this.map.removeLayer(this.measureLayer);
+      if (this.measureLabel) this.map.removeLayer(this.measureLabel);
+
+      this.measurePoints = [];
+      this.measureStartMarker = null;
+      this.measureLayer = null;
+      this.measureLabel = null;
+    }, 3000);
+  }
+
+  startMeasurement(startPoint) {
+    this.startMeasurementMode();
+    this.addMeasurePoint(startPoint);
+  }
+
+  applyFiltersToActiveLayers(filters) {
+    Object.values(this.currentLayers).forEach((cfg) => {
+      if (cfg.active && cfg.layer?.updateFilter) {
+        cfg.layer.updateFilter(filters);
+      }
+    });
+  }
+
+  wireColorFilterEvents() {
+    const $ = (id) => this.getElement(id);
+    const hue = $("hue-slider");
+    const contrast = $("contrast-slider");
+    const bright = $("brightness-slider");
+    const sat = $("saturate-slider");
+    const reset = $("reset-filters-btn");
+
+    if (!hue || !contrast || !bright || !sat) return;
+
+    const updateLabels = () => {
+      this.updateElement("hue-value", `${hue.value}°`);
+      this.updateElement("contrast-value", `${contrast.value}%`);
+      this.updateElement("brightness-value", `${bright.value}%`);
+      this.updateElement("saturate-value", `${sat.value}%`);
+    };
+
+    const pushFilters = () => {
+      const filters = [
+        `hue-rotate(${hue.value}deg)`,
+        `contrast(${contrast.value}%)`,
+        `brightness(${bright.value}%)`,
+        `saturate(${sat.value}%)`,
+      ];
+      this.applyFiltersToActiveLayers(filters);
+      updateLabels();
+    };
+
+    [hue, contrast, bright, sat].forEach((inp) => {
+      inp.addEventListener("input", pushFilters);
+      inp.addEventListener("change", pushFilters);
+    });
+
+    if (reset) {
+      reset.addEventListener("click", () => {
+        hue.value = 0;
+        contrast.value = 100;
+        bright.value = 100;
+        sat.value = 100;
+        pushFilters();
+      });
+    }
+
+    pushFilters();
+  }
+
+  setupUI() {
+    const today = new Date();
+    this.updateElement("lastUpdate", today.getFullYear());
+  }
+
+  getElement(id) {
+    return document.getElementById(id);
+  }
+  updateElement(id, value) {
+    const el = this.getElement(id);
+    if (el) el.textContent = value;
+  }
+  addEventListener(id, event, handler) {
+    const el = this.getElement(id);
+    if (el) el.addEventListener(event, handler);
+  }
+
+  showNotification(message, type = "info") {
+    document.querySelectorAll(".notification").forEach((n) => n.remove());
+    const colors = {
+      success: "rgba(34, 197, 94, 0.9)",
+      error: "rgba(239, 68, 68, 0.9)",
+      info: "rgba(59, 130, 246, 0.9)",
+      warning: "rgba(245, 158, 11, 0.9)",
+    };
+    const notification = document.createElement("div");
+    notification.className = "notification";
+    notification.textContent = message;
+    notification.style.cssText = `position: fixed; top: 20px; right: 20px; z-index: 10000; background: ${colors[type] || colors.info}; color: #fff; padding: 12px 20px; border-radius: 8px; font-size: 14px; font-weight: 500; transform: translateX(100%); transition: transform .3s ease; max-width: 300px; box-shadow: 0 4px 12px rgba(0,0,0,.15);`;
+    document.body.appendChild(notification);
+    setTimeout(() => (notification.style.transform = "translateX(0)"), 100);
+    setTimeout(() => {
+      notification.style.transform = "translateX(100%)";
+      setTimeout(() => notification.remove(), 300);
+    }, 4000);
+  }
+
+  toggleLayer(layerName) {
+    const layerItem = document.querySelector(`[data-layer="${layerName}"]`);
+    const layerConfig = this.currentLayers[layerName];
+    if (!layerConfig || !layerItem) return;
+    if (layerConfig.active) {
+      this.map.removeLayer(layerConfig.layer);
+    } else {
+      layerConfig.layer.addTo(this.map);
+    }
+    layerConfig.active = !layerConfig.active;
+    layerItem.classList.toggle("active", layerConfig.active);
+    this.updateActiveLayersCount();
+  }
+
+  setLayerOpacity(layerName, opacity) {
+    const layerConfig = this.currentLayers[layerName];
+    if (layerConfig?.active && layerConfig.layer) {
+      layerConfig.layer.setOpacity(parseFloat(opacity));
+    }
+  }
+
+  addMarker(coords, popupText) {
+    const marker = L.marker(coords)
+      .addTo(this.map)
+      .bindPopup(popupText)
+      .openPopup();
+    this.markers.push(marker);
+    return marker;
+  }
+
+  clearMarkers() {
+    if (!this.markers.length) return;
+    this.markers.forEach((m) => this.map.removeLayer(m));
+    this.markers = [];
+    this.showNotification("Markers deleted", "info");
+  }
+
+  updateActiveLayersCount() {
+    const count = Object.values(this.currentLayers).filter(
+      (l) => l.active,
+    ).length;
+    this.updateElement("activeLayers", count);
+  }
+  updateMapInfo() {
+    const center = this.map.getCenter();
+    this.updateElement("currentLat", center.lat.toFixed(3));
+    this.updateElement("currentLng", center.lng.toFixed(3));
+    this.updateElement("currentZoom", this.map.getZoom());
+  }
+
+  // ✅ Add this method to your SatelliteMapManager class
+  parseCoordinates(latStr, lngStr) {
+    // Function to convert DMS (Degrees, Minutes, Seconds) to decimal
+    const dmsToDecimal = (dmsStr) => {
+      // Clean the string
+      dmsStr = dmsStr.trim();
+      
+      // Detect if it's DMS format (contains °, ', or ")
+      if (dmsStr.includes('°') || dmsStr.includes('′') || dmsStr.includes('″')) {
+        // Extract components: 18°39′0″N
+        const regex = /(-?\d+)[°º]\s*(\d+)?[′'']?\s*(\d+)?[″""]?\s*([NSEW])?/i;
+        const match = dmsStr.match(regex);
+        
+        if (!match) return null;
+        
+        const degrees = parseFloat(match[1]) || 0;
+        const minutes = parseFloat(match[2]) || 0;
+        const seconds = parseFloat(match[3]) || 0;
+        const direction = (match[4] || '').toUpperCase();
+        
+        // Convert to decimal
+        let decimal = degrees + (minutes / 60) + (seconds / 3600);
+        
+        // Apply direction (S and W are negative)
+        if (direction === 'S' || direction === 'W') {
+          decimal = -decimal;
+        }
+        
+        return decimal;
+      }
+      
+      // If not DMS, try parsing as decimal
+      return parseFloat(dmsStr);
+    };
+    
+    const lat = dmsToDecimal(latStr);
+    const lng = dmsToDecimal(lngStr);
+    
+    return { lat, lng };
+  }
+
+  normalizeMarsLng(lng) {
+    // Convert 0–360°E to –180–180°
+    if (lng > 180) {
+      return lng - 360;
+    }
+    return lng;
+  }
+
+  goToCoordinates() {
+    const latInput = this.getElement("latInput");
+    const lngInput = this.getElement("lngInput");
+    if (!latInput || !lngInput) return;
+
+    const lat = parseFloat(latInput.value.trim());
+    const lng = parseFloat(lngInput.value.trim());
+
+    if (isNaN(lat) || isNaN(lng)) {
+      this.showNotification("Invalid coordinates", "error");
+      return;
+    }
+
+    const normalizedLng = this.normalizeMarsLng(lng);
+
+    this.map.setView([lat, normalizedLng], 7);
+    this.addMarker([lat, normalizedLng],
+      `Coordinates: ${lat.toFixed(4)}, ${normalizedLng.toFixed(4)}`
+    );
+  }
+
+  performSearch() {
+    const searchInput = this.getElement("mainSearch");
+    if (!searchInput) return;
+    const searchTerm = searchInput.value.trim();
+    if (!searchTerm) {
+      this.showNotification("Enter a search term", "error");
+      return;
+    }
+
+    const savedMarkers = this.drawnItems
+      .getLayers()
+      .filter(
+        (layer) =>
+          layer instanceof L.Marker &&
+          layer.options.title &&
+          layer.options.title
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()),
+      );
+
+    if (savedMarkers.length > 0) {
+      const marker = savedMarkers[0];
+      this.map.setView(marker.getLatLng(), 10);
+      marker.openPopup();
+      this.showNotification(
+        `Found marker: ${marker.options.title}`,
+        "success",
+      );
+      return;
+    }
+
+    this.showLoading(true);
+    setTimeout(() => {
+      this.showLoading(false);
+      const searchLower = searchTerm.toLowerCase();
+      let found = false;
+      for (const location of Object.keys(this.locations)) {
+        if (searchLower.includes(location)) {
+          const coords = this.locations[location];
+          this.map.setView(coords, 10);
+          const locationName =
+            location.charAt(0).toUpperCase() + location.slice(1);
+          this.addMarker(coords, locationName);
+          this.showNotification(`Found: ${locationName}`, "success");
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        this.showNotification(
+          `Location not found on ${this.planet}. Try planet-specific features`,
+          "error",
+        );
+      }
+    }, 1000);
+  }
+
+  performAISearch() {
+    const aiInput = this.getElement("aiSearch");
+    if (!aiInput) return;
+    const aiQuery = aiInput.value.trim();
+    if (!aiQuery) {
+      this.showNotification("Enter a query for AI", "error");
+      return;
+    }
+    this.showLoading(true);
+    setTimeout(() => {
+      this.showLoading(false);
+      const queryLower = aiQuery.toLowerCase();
+      let found = false;
+      for (const keyword of Object.keys(this.aiResponses)) {
+        if (queryLower.includes(keyword)) {
+          const { coords, name } = this.aiResponses[keyword];
+          this.map.setView(coords, 8);
+          this.addMarker(coords, `AI found: ${name}`);
+          this.showNotification(`AI found: ${name}`, "success");
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        const suggestions = Object.keys(this.aiResponses)
+          .slice(0, 3)
+          .join(", ");
+        this.showNotification(`AI: Try searching for "${suggestions}"`, "info");
+      }
+    }, 1500);
+  }
+
+  showInfoPanel(content) {
+    const imageInfoEl = this.getElement("imageInfo");
+    const infoPanelEl = this.getElement("infoPanel");
+    if (!imageInfoEl || !infoPanelEl) return;
+    imageInfoEl.innerHTML =
+      content ||
+      "<h3>Information panel</h3><p>Panel content here.</p>";
+    infoPanelEl.style.display = "block";
+  }
+  closeInfoPanel() {
+    const infoPanelEl = this.getElement("infoPanel");
+    if (infoPanelEl) infoPanelEl.style.display = "none";
+  }
+
+  showSharePopup() {
+    // Get or generate hash
+    const params = new URLSearchParams(window.location.search);
+    let hash = params.get("hash");
+    
+    if (!hash) {
+      hash = this.generateHash(10);
+      const newUrl = new URL(window.location);
+      newUrl.searchParams.set("hash", hash);
+      window.history.pushState({}, "", newUrl);
+    }
+    
+    const shareUrl = window.location.href;
+    
+    // Create modal
+    const modalHTML = `
+      <div id="shareModal" style="
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+      ">
+        <div style="
+          background: #1a1a2e;
+          padding: 30px;
+          border-radius: 12px;
+          max-width: 400px;
+          width: 90%;
+          color: #fff;
+          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        ">
+          <h3 style="margin: 0 0 20px 0; font-size: 22px; color: #3b82f6; text-align: center;">
+            Map Saved
+          </h3>
+          
+          <!-- QR Code -->
+          <div style="text-align: center; margin: 20px 0; background: white; padding: 20px; border-radius: 8px;">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(shareUrl)}" 
+                 alt="QR Code" 
+                 style="max-width: 200px; display: block; margin: 0 auto;">
+          </div>
+          
+          <!-- URL to copy -->
+          <div style="
+            background: #0f172a;
+            padding: 12px;
+            border-radius: 6px;
+            margin: 20px 0;
+            border: 1px solid #334155;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+          ">
+            <input 
+              type="text" 
+              id="shareUrlInput" 
+              value="${shareUrl}"
+              readonly
+              style="
+                flex: 1;
+                background: transparent;
+                border: none;
+                color: #e2e8f0;
+                font-family: monospace;
+                font-size: 13px;
+                outline: none;
+              "
+            />
+            <button id="copyUrlBtn" style="
+              background: #3b82f6;
+              color: white;
+              border: none;
+              padding: 8px 16px;
+              border-radius: 6px;
+              cursor: pointer;
+              font-weight: 600;
+              white-space: nowrap;
+            ">
+              Copy
+            </button>
+          </div>
+          
+          <!-- Close button -->
+          <button id="closeShareModal" style="
+            width: 100%;
+            margin-top: 15px;
+            background: #334155;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+          ">
+            Close
+          </button>
+        </div>
+      </div>
+    `;
+    
+    // Add modal to DOM
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    // Event listeners
+    const copyBtn = document.getElementById('copyUrlBtn');
+    const closeBtn = document.getElementById('closeShareModal');
+    const urlInput = document.getElementById('shareUrlInput');
+    const modal = document.getElementById('shareModal');
+    
+    // Copy URL
+    copyBtn.addEventListener('click', () => {
+      urlInput.select();
+      navigator.clipboard.writeText(shareUrl).then(() => {
+        copyBtn.textContent = '✓ Copied';
+        copyBtn.style.background = '#22c55e';
+        this.showNotification('URL copied to clipboard', 'success');
+        setTimeout(() => {
+          copyBtn.textContent = 'Copy';
+          copyBtn.style.background = '#3b82f6';
+        }, 2000);
+      }).catch(() => {
+        this.showNotification('Error copying', 'error');
+      });
+    });
+    
+    // Close modal
+    closeBtn.addEventListener('click', () => {
+      modal.remove();
+    });
+    
+    // Close when clicking outside
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.remove();
+    }
+    });
+  }
+
+  showHelp() {
+    const helpContent = `
+          <h3>🛰️ ${this.planet.toUpperCase()} Explorer</h3>
+          <div style="margin:15px 0;">
+              <h4 style="color:#3b82f6;margin-bottom:8px;">🗺️ Navigation</h4>
+              <ul style="margin-left:20px;line-height:1.6;">
+                  <li>Drag to move the map</li>
+                  <li>Mouse wheel to zoom</li>
+                  <li>Ctrl + Click to add simple marker</li>
+                  <li>Right click for context menu</li>
+              </ul>
+          </div>
+          <div style="margin:15px 0;">
+              <h4 style="color:#3b82f6;margin-bottom:8px;">✏️ Annotation tools</h4>
+              <ul style="margin-left:20px;line-height:1.6;">
+                  <li>Use the <i class="fas fa-pen"></i> button to activate drawing tools</li>
+                  <li>Create named markers to search for them later</li>
+                  <li>Save your annotations with the Save button</li>
+                  <li>Export the view with the <i class="fas fa-download"></i> button</li>
+              </ul>
+          </div>
+          <div style="margin:15px 0;">
+              <h4 style="color:#3b82f6;margin-bottom:8px;">📍 ${this.planet}-specific searches</h4>
+              <ul style="margin-left:20px;line-height:1.6;">
+                  ${Object.keys(this.locations)
+                    .map((loc) => `<li>${loc}</li>`)
+                    .join("")}
+              </ul>
+          </div>
+      `;
+    this.showInfoPanel(helpContent);
+  }
+
+  showLayerInfo() {
+    const activeCount = Object.values(this.currentLayers).filter(
+      (l) => l.active,
+    ).length;
+    const center = this.map.getCenter();
+
+    const annotationsCount = this.drawnItems.getLayers().length;
+    const markersCount = this.drawnItems
+      .getLayers()
+      .filter((l) => l instanceof L.Marker).length;
+    const shapesCount = annotationsCount - markersCount;
+
+    const infoContent = `
+          <h3>📊 ${this.planet.toUpperCase()} Map Status</h3>
+          <div style="margin:15px 0;">
+              <h4 style="color:#3b82f6;margin-bottom:8px;">🗂️ Active Layers: ${activeCount}</h4>
+              <div style="margin-left:10px;font-family:monospace;background:rgba(59,130,246,.1);padding:10px;border-radius:5px;">
+                  <p><strong>Center:</strong> ${center.lat.toFixed(4)}, ${center.lng.toFixed(4)}</p>
+                  <p><strong>Zoom:</strong> ${this.map.getZoom()}</p>
+                  <p><strong>Markers:</strong> ${this.markers.length}</p>
+              </div>
+          </div>
+          <div style="margin:15px 0;">
+              <h4 style="color:#3b82f6;margin-bottom:8px;">📝 Annotations: ${annotationsCount}</h4>
+              <div style="margin-left:10px;font-family:monospace;background:rgba(59,130,246,.1);padding:10px;border-radius:5px;">
+                  <p><strong>Markers:</strong> ${markersCount}</p>
+                  <p><strong>Shapes:</strong> ${shapesCount}</p>
+              </div>
+          </div>
+      `;
+    this.showInfoPanel(infoContent);
+  }
+
+  toggleFullscreen() {
+    if (!this.isFullscreen) {
+      const element = document.documentElement;
+      element.requestFullscreen?.() || element.webkitRequestFullscreen?.();
+      this.isFullscreen = true;
+      this.showNotification("Fullscreen mode activated");
+    } else {
+      document.exitFullscreen?.() || document.webkitExitFullscreen?.();
+      this.isFullscreen = false;
+      this.showNotification("Fullscreen mode deactivated");
+    }
+  }
+
+  openColorFilters() {
+    const filterContent = `
+<div class="filter-group" style="margin-bottom: 15px;">
+  <label style="display:block;margin-bottom:5px;font-weight:bold;color:#fff;">
+    <i class="fas fa-rainbow"></i> Hue: <span id="hue-value" style="color:var(--accent-cyan);background:rgba(0,188,212,.1);padding:2px 6px;border-radius:4px;">0°</span>
+  </label>
+  <input type="range" id="hue-slider" min="0" max="360" value="0" step="1" style="width:100%;height:6px;border-radius:3px;background:rgba(255,255,255,.1);outline:none;-webkit-appearance:none;">
+</div>
+<div class="filter-group" style="margin-bottom: 15px;">
+  <label style="display:block;margin-bottom:5px;font-weight:bold;color:#fff;">
+    <i class="fas fa-adjust"></i> Contrast: <span id="contrast-value" style="color:var(--accent-cyan);background:rgba(0,188,212,.1);padding:2px 6px;border-radius:4px;">100%</span>
+  </label>
+  <input type="range" id="contrast-slider" min="0" max="200" value="100" step="1" style="width:100%;height:6px;border-radius:3px;background:rgba(255,255,255,.1);outline:none;-webkit-appearance:none;">
+</div>
+<div class="filter-group" style="margin-bottom: 15px;">
+  <label style="display:block;margin-bottom:5px;font-weight:bold;color:#fff;">
+    <i class="fas fa-sun"></i> Brightness: <span id="brightness-value" style="color:var(--accent-cyan);background:rgba(0,188,212,.1);padding:2px 6px;border-radius:4px;">100%</span>
+  </label>
+  <input type="range" id="brightness-slider" min="0" max="200" value="100" step="1" style="width:100%;height:6px;border-radius:3px;background:rgba(255,255,255,.1);outline:none;-webkit-appearance:none;">
+</div>
+<div class="filter-group" style="margin-bottom: 15px;">
+  <label style="display:block;margin-bottom:5px;font-weight:bold;color:#fff;">
+    <i class="fas fa-tint"></i> Saturation: <span id="saturate-value" style="color:var(--accent-cyan);background:rgba(0,188,212,.1);padding:2px 6px;border-radius:4px;">100%</span>
+  </label>
+  <input type="range" id="saturate-slider" min="0" max="200" value="100" step="1" style="width:100%;height:6px;border-radius:3px;background:rgba(255,255,255,.1);outline:none;-webkit-appearance:none;">
+</div>
+<div style="display:flex;gap:10px;margin-top:20px;">
+  <button id="reset-filters-btn" style="flex:1;padding:10px;border-radius:6px;background:linear-gradient(135deg,#ff6b6b,#ff5252);color:#fff;border:none;cursor:pointer;font-weight:600;transition:all .2s;">
+    <i class="fas fa-undo"></i> Reset
+  </button>
+</div>`;
+    this.showInfoPanel(filterContent);
+    this.wireColorFilterEvents();
+  }
+
+  showLoading(show) {
+    const el = this.getElement("loadingIndicator");
+    if (el) el.style.display = show ? "flex" : "none";
+  }
+}
+
+// Automatic initialization
+document.addEventListener("DOMContentLoaded", async () => {
+  const mapContainer = document.getElementById("map");
+  if (mapContainer) {
+    const planet = mapContainer.dataset.planet || "mars";
+    const configData = mapContainer.dataset.config;
+    let planetConfig = null;
+
+    try {
+      if (configData) {
+        planetConfig = JSON.parse(configData);
+      }
+    } catch (e) {
+      console.warn("Error parsing planet config:", e);
+    }
+
+    if (typeof L === "undefined") {
+      console.warn("Leaflet is not available, loading dynamically...");
+      await import("leaflet");
+    }
+
+    if (!L.Draw) {
+      console.warn(
+        "Leaflet.draw is not available, loading dynamically...",
+      );
+      await import("leaflet-draw");
+    }
+
+    const satelliteMap = new SatelliteMapManager(planet, planetConfig);
+    satelliteMap.init();
+
+    window.satelliteMap = satelliteMap;
+  }
+});
+
+if (
+  document.readyState === "complete" ||
+  document.readyState === "interactive"
+) {
+  const mapContainer = document.getElementById("map");
+  if (mapContainer && !window.satelliteMap) {
+    const planet = mapContainer.dataset.planet || "mars";
+    const configData = mapContainer.dataset.config;
+    let planetConfig = null;
+
+    try {
+      if (configData) {
+        planetConfig = JSON.parse(configData);
+      }
+    } catch (e) {
+      console.warn("Error parsing planet config:", e);
+    }
+
+    if (typeof L !== "undefined" && L.Draw) {
+      const satelliteMap = new SatelliteMapManager(planet, planetConfig);
+      satelliteMap.init();
+      window.satelliteMap = satelliteMap;
+    } else {
+      console.warn(
+        "Waiting for Leaflet and Leaflet.draw to be available...",
+      );
+    }
+  }
+}
+</script>

@@ -1,0 +1,774 @@
+---
+// src/pages/index.astro
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="NASA Satellite Explorer - Explore the Solar System">
+  <main class="landing-page">
+    <!-- Header Hero -->
+    <header class="hero-header">
+      <div class="stars-bg"></div>
+      <div class="hero-content">
+        <div class="logo-section">
+          <img class="logo" src="/images/LOGO.png"/>
+          <p class="tagline">Explore the cosmos through cutting-edge satellite imagery</p>
+        </div>
+      </div>
+    </header>
+
+    <!-- Planets Selection -->
+    <section class="planets-section">
+      <div class="section-header">
+        <h2>Choose Your Destination</h2>
+        <p>Select a planet to begin your satellite exploration journey</p>
+      </div>
+
+      <div class="planets-grid">
+        <!-- Mars -->
+        <a href="/mars" class="planet-card mars">
+          <div class="planet-image">
+            <div class="planet-sphere mars-sphere"></div>
+            <div class="atmosphere mars-atmosphere"></div>
+          </div>
+          <div class="planet-info">
+            <h3>Mars</h3>
+            <p class="planet-description">The Red Planet - Explore Olympus Mons and Valles Marineris</p>
+            <div class="planet-features">
+              <span class="feature">Viking Imagery</span>
+              <span class="feature">MOLA Topography</span>
+              <span class="feature">Global Surveyor</span>
+            </div>
+            <div class="explore-btn">
+              <i class="fas fa-rocket"></i>
+              <span>Explore Mars</span>
+            </div>
+          </div>
+        </a>
+
+        <!-- Earth -->
+        <a href="/earth" class="planet-card earth">
+          <div class="planet-image">
+            <div class="planet-sphere earth-sphere"></div>
+            <div class="atmosphere earth-atmosphere"></div>
+          </div>
+          <div class="planet-info">
+            <h3>Earth</h3>
+            <p class="planet-description">Our Blue Planet - Landsat and Sentinel imagery</p>
+            <div class="planet-features">
+              <span class="feature">Landsat 8-9</span>
+              <span class="feature">Sentinel-2</span>
+              <span class="feature">MODIS</span>
+            </div>
+            <div class="explore-btn">
+              <i class="fas fa-globe-americas"></i>
+              <span>Explore Earth</span>
+            </div>
+          </div>
+        </a>
+
+        <!-- Jupiter -->
+        <a href="/jupiter" class="planet-card jupiter">
+          <div class="planet-image">
+            <div class="planet-sphere jupiter-sphere"></div>
+            <div class="atmosphere jupiter-atmosphere"></div>
+          </div>
+          <div class="planet-info">
+            <h3>Jupiter</h3>
+            <p class="planet-description">Gas Giant - Storm systems and atmospheric dynamics</p>
+            <div class="planet-features">
+              <span class="feature">Juno Mission</span>
+              <span class="feature">Hubble Images</span>
+              <span class="feature">Great Red Spot</span>
+            </div>
+            <div class="explore-btn">
+              <i class="fas fa-hurricane"></i>
+              <span>Explore Jupiter</span>
+            </div>
+          </div>
+        </a>
+
+        <!-- Saturn -->
+        <a href="/saturn" class="planet-card saturn">
+          <div class="planet-image">
+            <div class="planet-sphere saturn-sphere"></div>
+            <div class="rings"></div>
+            <div class="atmosphere saturn-atmosphere"></div>
+          </div>
+          <div class="planet-info">
+            <h3>Saturn</h3>
+            <p class="planet-description">Ringed Beauty - Cassini mission imagery</p>
+            <div class="planet-features">
+              <span class="feature">Ring System</span>
+              <span class="feature">Cassini Data</span>
+              <span class="feature">Moon Surveys</span>
+            </div>
+            <div class="explore-btn">
+              <i class="fas fa-ring"></i>
+              <span>Explore Saturn</span>
+            </div>
+          </div>
+        </a>
+
+        <!-- Venus -->
+        <a href="/venus" class="planet-card venus">
+          <div class="planet-image">
+            <div class="planet-sphere venus-sphere"></div>
+            <div class="atmosphere venus-atmosphere"></div>
+          </div>
+          <div class="planet-info">
+            <h3>Venus</h3>
+            <p class="planet-description">Clouded World - Radar mapping through dense atmosphere</p>
+            <div class="planet-features">
+              <span class="feature">Magellan Radar</span>
+              <span class="feature">Surface Mapping</span>
+              <span class="feature">Volcanic Features</span>
+            </div>
+            <div class="explore-btn">
+              <i class="fas fa-cloud"></i>
+              <span>Explore Venus</span>
+            </div>
+          </div>
+        </a>
+
+        <!-- Mercury -->
+        <a href="/mercury" class="planet-card mercury">
+          <div class="planet-image">
+            <div class="planet-sphere mercury-sphere"></div>
+          </div>
+          <div class="planet-info">
+            <h3>Mercury</h3>
+            <p class="planet-description">Closest to the Sun - MESSENGER mission data</p>
+            <div class="planet-features">
+              <span class="feature">MESSENGER</span>
+              <span class="feature">Crater Analysis</span>
+              <span class="feature">Magnetic Field</span>
+            </div>
+            <div class="explore-btn">
+              <i class="fas fa-sun"></i>
+              <span>Explore Mercury</span>
+            </div>
+          </div>
+        </a>
+      </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features-section">
+      <div class="section-header">
+        <h2>Advanced Satellite Technology</h2>
+        <p>Experience space exploration with cutting-edge tools</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">
+            <i class="fas fa-layer-group"></i>
+          </div>
+          <h3>Multi-Layer Analysis</h3>
+          <p>Combine multiple satellite layers for comprehensive planetary analysis</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">
+            <i class="fas fa-palette"></i>
+          </div>
+          <h3>Color Filtering</h3>
+          <p>Advanced color filters to enhance surface features and atmospheric phenomena</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">
+            <i class="fas fa-search"></i>
+          </div>
+          <h3>AI-Powered Search</h3>
+          <p>Intelligent search to find specific geographic and atmospheric features</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">
+            <i class="fas fa-ruler"></i>
+          </div>
+          <h3>Measurement Tools</h3>
+          <p>Precise distance and area calculations for scientific analysis</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">
+            <i class="fas fa-download"></i>
+          </div>
+          <h3>Export & Share</h3>
+          <p>Export high-resolution images and share your discoveries</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">
+            <i class="fas fa-cube"></i>
+          </div>
+          <h3>3D Visualization</h3>
+          <p>Three-dimensional terrain rendering for immersive exploration</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="landing-footer">
+      <div class="footer-content">
+        <div class="footer-logo">
+          <i class="fas fa-satellite"></i>
+          <span>NASA Satellite Explorer</span>
+        </div>
+        <div class="footer-links">
+          <a href="#about">About</a>
+          <a href="#data-sources">Data Sources</a>
+          <a href="#api">API</a>
+          <a href="#contact">Contact</a>
+        </div>
+        <div class="footer-credits">
+          <p>Data provided by NASA, ESA, and international space agencies</p>
+          <p>&copy; 2024 NASA Satellite Explorer. Educational use only.</p>
+        </div>
+      </div>
+    </footer>
+  </main>
+</Layout>
+
+<style>
+/* Reset y variables */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --space-black: #0a0a0f;
+  --space-dark: #0f0f1a;
+  --space-blue: #1a1a2e;
+  --space-purple: #16213e;
+  --accent-blue: #00d4ff;
+  --accent-purple: #6366f1;
+  --accent-cyan: #22d3ee;
+  --accent-orange: #ff6b35;
+  --accent-red: #ff4757;
+  --accent-green: #2ed573;
+  --text-primary: #ffffff;
+  --text-secondary: #a1a1aa;
+  --glass-bg: rgba(15, 15, 26, 0.8);
+  --glass-border: rgba(255, 255, 255, 0.1);
+}
+
+.landing-page {
+  background: radial-gradient(ellipse at top, var(--space-purple) 0%, var(--space-dark) 50%, var(--space-black) 100%);
+  color: var(--text-primary);
+  min-height: 100vh;
+}
+
+/* Hero Header */
+.hero-header {
+  position: relative;
+  padding: 80px 0px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  overflow: hidden;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.stars-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    radial-gradient(2px 2px at 20px 30px, var(--accent-cyan), transparent),
+    radial-gradient(2px 2px at 40px 70px, var(--accent-blue), transparent),
+    radial-gradient(1px 1px at 90px 40px, var(--accent-purple), transparent),
+    radial-gradient(1px 1px at 130px 80px, var(--accent-cyan), transparent),
+    radial-gradient(2px 2px at 160px 30px, var(--accent-blue), transparent);
+  background-repeat: repeat;
+  background-size: 200px 100px;
+  animation: twinkle 4s ease-in-out infinite alternate;
+}
+
+@keyframes twinkle {
+  from { opacity: 0.5; }
+  to { opacity: 1; }
+}
+
+.hero-content {
+  z-index: 2;
+  max-width: 800px;
+  padding: 0 20px;
+}
+
+.logo-section i {
+  font-size: 80px;
+  color: var(--accent-cyan);
+  margin-bottom: 20px;
+  filter: drop-shadow(0 0 20px rgba(0, 212, 255, 0.5));
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+.logo-section h1 {
+  font-size: 4rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 20px;
+  letter-spacing: -2px;
+}
+
+.tagline {
+  font-size: 1.5rem;
+  color: var(--text-secondary);
+  font-weight: 300;
+  margin-bottom: 40px;
+}
+
+.hero-stats {
+  display: flex;
+  gap: 60px;
+  justify-content: center;
+  margin-top: 40px;
+}
+
+.stat {
+  text-align: center;
+}
+
+.stat-number {
+  display: block;
+  font-size: 3rem;
+  font-weight: 700;
+  color: var(--accent-cyan);
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Planets Section */
+.planets-section {
+  padding: 100px 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.section-header {
+  text-align: center;
+  margin-bottom: 80px;
+}
+
+.section-header h2 {
+  font-size: 3rem;
+  font-weight: 600;
+  margin-bottom: 20px;
+  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.section-header p {
+  font-size: 1.2rem;
+  color: var(--text-secondary);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.planets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 40px;
+  margin-top: 60px;
+}
+
+.planet-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: 24px;
+  padding: 30px;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  gap: 30px;
+  align-items: center;
+}
+
+.planet-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.05), rgba(99, 102, 241, 0.05));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.planet-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  border-color: var(--accent-cyan);
+}
+
+.planet-card:hover::before {
+  opacity: 1;
+}
+
+.planet-image {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  flex-shrink: 0;
+}
+
+.planet-sphere {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  position: relative;
+  animation: rotate 20s linear infinite;
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.mars-sphere {
+  background: radial-gradient(circle at 30% 30%, #ff6b35, #d63031, #2d3436);
+  box-shadow: inset -10px -10px 20px rgba(0, 0, 0, 0.5), 0 0 20px rgba(255, 107, 53, 0.3);
+}
+
+.earth-sphere {
+  background: radial-gradient(circle at 30% 30%, #74b9ff, #0984e3, #00b894);
+  box-shadow: inset -10px -10px 20px rgba(0, 0, 0, 0.3), 0 0 20px rgba(116, 185, 255, 0.3);
+}
+
+.jupiter-sphere {
+  background: linear-gradient(45deg, #fdcb6e, #e17055, #a29bfe);
+  box-shadow: inset -10px -10px 20px rgba(0, 0, 0, 0.3), 0 0 20px rgba(253, 203, 110, 0.3);
+}
+
+.saturn-sphere {
+  background: radial-gradient(circle at 30% 30%, #fdcb6e, #f39c12, #d35400);
+  box-shadow: inset -10px -10px 20px rgba(0, 0, 0, 0.3), 0 0 20px rgba(253, 203, 110, 0.3);
+}
+
+.venus-sphere {
+  background: radial-gradient(circle at 30% 30%, #ffeaa7, #fdcb6e, #e17055);
+  box-shadow: inset -10px -10px 20px rgba(0, 0, 0, 0.3), 0 0 20px rgba(255, 234, 167, 0.3);
+}
+
+.mercury-sphere {
+  background: radial-gradient(circle at 30% 30%, #b2bec3, #636e72, #2d3436);
+  box-shadow: inset -10px -10px 20px rgba(0, 0, 0, 0.5), 0 0 20px rgba(178, 190, 195, 0.3);
+}
+
+.atmosphere {
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  right: -10px;
+  bottom: -10px;
+  border-radius: 50%;
+  opacity: 0.3;
+}
+
+.mars-atmosphere {
+  background: radial-gradient(circle, transparent 60%, rgba(255, 107, 53, 0.2) 100%);
+}
+
+.earth-atmosphere {
+  background: radial-gradient(circle, transparent 60%, rgba(116, 185, 255, 0.3) 100%);
+}
+
+.rings {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotateX(75deg);
+  width: 160px;
+  height: 160px;
+  border: 3px solid rgba(253, 203, 110, 0.6);
+  border-radius: 50%;
+}
+
+.rings::after {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  right: -8px;
+  bottom: -8px;
+  border: 2px solid rgba(253, 203, 110, 0.3);
+  border-radius: 50%;
+}
+
+.planet-info {
+  flex: 1;
+}
+
+.planet-info h3 {
+  font-size: 1.8rem;
+  font-weight: 600;
+  margin-bottom: 10px;
+  color: var(--text-primary);
+}
+
+.planet-description {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.planet-features {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 25px;
+}
+
+.feature {
+  background: rgba(0, 212, 255, 0.1);
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  color: var(--accent-cyan);
+}
+
+.explore-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+  padding: 12px 24px;
+  border-radius: 12px;
+  color: white;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.planet-card:hover .explore-btn {
+  transform: translateX(5px);
+  box-shadow: 0 4px 16px rgba(0, 212, 255, 0.3);
+}
+
+/* Features Section */
+.features-section {
+  padding: 100px 20px;
+  background: linear-gradient(180deg, transparent, rgba(15, 15, 26, 0.5));
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 30px;
+  margin-top: 60px;
+}
+
+.feature-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 30px;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.feature-card:hover {
+  transform: translateY(-5px);
+  border-color: var(--accent-cyan);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.feature-icon {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  font-size: 2rem;
+  color: white;
+}
+
+.feature-card h3 {
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin-bottom: 15px;
+  color: var(--text-primary);
+}
+
+.feature-card p {
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* Footer */
+.landing-footer {
+  background: var(--space-black);
+  padding: 60px 20px 40px;
+  border-top: 1px solid var(--glass-border);
+}
+
+.footer-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.footer-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--accent-cyan);
+  margin-bottom: 30px;
+}
+
+.footer-logo i {
+  font-size: 2rem;
+}
+
+.footer-links {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  margin-bottom: 30px;
+}
+
+.footer-links a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.footer-links a:hover {
+  color: var(--accent-cyan);
+}
+
+.footer-credits p {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin-bottom: 10px;
+}
+
+/* Animaciones */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .logo-section h1 {
+    font-size: 2.5rem;
+  }
+  
+  .tagline {
+    font-size: 1.2rem;
+  }
+  
+  .hero-stats {
+    gap: 30px;
+  }
+  
+  .stat-number {
+    font-size: 2rem;
+  }
+  
+  .section-header h2 {
+    font-size: 2rem;
+  }
+  
+  .planets-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .planet-card {
+    flex-direction: column;
+    text-align: center;
+    padding: 20px;
+  }
+  
+  .planet-image {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .features-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .footer-links {
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .logo-section h1 {
+    font-size: 2rem;
+  }
+  
+  .hero-stats {
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .planet-card {
+    padding: 15px;
+  }
+  
+  .planet-image {
+    width: 80px;
+    height: 80px;
+  }
+}
+</style>
+
+<script>
+// Script mínimo sin animaciones complejas
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('NASA Satellite Explorer loaded');
+});
+</script>

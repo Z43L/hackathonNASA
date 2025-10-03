@@ -1,0 +1,9 @@
+{
+  "venusMagellan": {
+    "layer": null,
+    "active": true,
+    "url": "https://trek.nasa.gov/tiles/Venus/EQ/Venus_Magellan_C3-MDIR_Global_Mosaic_2025m/1.0.0//default/default028mm/{z}/{y}/{x}.png",
+    "attribution": "Venus_Magellan_C3",
+    "zoom": 5
+  }
+}

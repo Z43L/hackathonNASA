@@ -1,0 +1,151 @@
+---
+const {planet} = Astro.props;
+---
+	
+	<body>
+        <div class="header">
+            <div class="logo">
+                <i class="fas fa-rocket"></i>
+                NASA Satellite Explorer
+            </div>
+            <div class="search-container">
+                <input
+                    type="text"
+                    class="search-input"
+                    placeholder="Buscar ubicación, coordenadas o características..."
+                    id="mainSearch"
+                />
+                <button class="search-btn" onclick="performSearch()">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+            <div class="controls">
+                <button class="control-btn" onclick="toggleFullscreen()">
+                    <i class="fas fa-expand"></i>
+                    Pantalla completa
+                </button>
+                <button class="control-btn" onclick="showHelp()">
+                    <i class="fas fa-question-circle"></i>
+                    Ayuda
+                </button>
+            </div>
+        </div>
+
+        <div class="main-container">
+            <div class="sidebar">
+                <slot />
+                <div class="section">
+                    <div class="section-title">
+                        <i class="fas fa-map-marker-alt"></i>
+                        Navegación por Coordenadas
+                    </div>
+                    <div class="coordinates-input">
+                        <input
+                            type="number"
+                            class="coord-input"
+                            placeholder="Latitud"
+                            id="latInput"
+                            step="any"
+                        />
+                        <input
+                            type="number"
+                            class="coord-input"
+                            placeholder="Longitud"
+                            id="lngInput"
+                            step="any"
+                        />
+                    </div>
+                    <button
+                        class="control-btn"
+                        style="width: 100%;"
+                        onclick="goToCoordinates()"
+                    >
+                        <i class="fas fa-crosshairs"></i>
+                        Ir a Coordenadas
+                    </button>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">
+                        <i class="fas fa-robot"></i>
+                        Búsqueda IA
+                    </div>
+                    <div class="ai-search-container">
+                        <textarea
+                            class="ai-input"
+                            placeholder="Describe lo que buscas: 'ciudades costeras', 'zonas deforestadas', 'glaciares en retroceso', etc."
+                            id="aiSearch"></textarea>
+                        <button
+                            class="control-btn"
+                            style="width: 100%; margin-top: 12px;"
+                            onclick="performAISearch()"
+                        >
+                            <i class="fas fa-brain"></i>
+                            Buscar con IA
+                        </button>
+                    </div>
+                </div>
+
+
+            </div>
+
+            <div class="map-container">
+                <div id="map" data-planet={planet}></div>
+                <div class="map-overlay">
+                    <button
+                        class="overlay-btn"
+                        onclick="toggleMeasurement()"
+                        title="Herramienta de medición"
+                    >
+                        <i class="fas fa-ruler"></i>
+                    </button>
+                    <button
+                        class="overlay-btn"
+                        onclick="exportView()"
+                        title="Exportar vista"
+                    >
+                        <i class="fas fa-download"></i>
+                    </button>
+                    <button
+                        class="overlay-btn"
+                        onclick="showLayerInfo()"
+                        title="Info de capas"
+                    >
+                        <i class="fas fa-info"></i>
+                    </button>
+                    <button
+                        class="overlay-btn"
+                        onclick="openColorFilters()"
+                        title="Filters"
+                    >
+                        <i class="fas fa-sliders"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="status-bar">
+            <div>
+                Lat: <span id="currentLat">0.000</span>, Lng: <span
+                    id="currentLng">0.000</span
+                > | Zoom: <span id="currentZoom">2</span> | Capas activas: <span
+                    id="activeLayers">1</span
+                >
+            </div>
+            <div>
+                Datos: NASA/USGS/ESA | Última actualización: <span
+                    id="lastUpdate">2024</span
+                >
+            </div>
+        </div>
+
+        <div class="loading" id="loadingIndicator">
+            <div class="spinner"></div>
+        </div>
+        <div class="floating-panel" id="infoPanel">
+            <button class="close-btn" onclick="closeInfoPanel()">&times;</button
+            >
+            <div id="imageInfo"></div>
+        </div>
+
+    </body>
