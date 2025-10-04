@@ -1,7 +1,16 @@
 {
-  "earthLandsat": {
+  "osmLocal": {
     "layer": null,
     "active": true,
+    "url": "/tiles/earth/{z}/{x}/{y}.png",
+    "attribution": "© OpenStreetMap contributors",
+    "zoom": 7,
+    "name": "OpenStreetMap Local",
+    "description": "Mapa base descargado localmente."
+  },
+  "earthLandsat": {
+    "layer": null,
+    "active": false,
     "url": "https://trek.nasa.gov/tiles/Earth/EQ/Landsat8_visible/1.0.0/default/default028mm/{z}/{y}/{x}.jpg",
     "attribution": "NASA Landsat 8",
     "zoom": 7

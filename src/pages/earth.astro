@@ -2,8 +2,37 @@
 // src/pages/earth.astro
 import Layout from '../layouts/Layout.astro';
 import SatelliteMap from '../components/SatelliteMap.astro';
+import Earth3DViewer from '../components/Earth3DViewer.jsx';
+import EarthOSMMap from '../components/EarthOSMMap.jsx';
 ---
 
 <Layout title="Earth Explorer">
-  <SatelliteMap planet="earth" />
+  {/* Selector de modo de mapa */}
+  <div style={{margin: '1em 0'}}>
+    <button id="btn-3d">3D (Cesium)</button>
+    <button id="btn-osm">2D (OpenStreetMap)</button>
+  </div>
+  <div id="map-container">
+    <Earth3DViewer client:only="react" onCoordinateClick={async ({ lat, lon }) => {
+      const precip = await fetch(`/api/precipitation/real?lat=${lat}&lon=${lon}`).then(r => r.json());
+      const ssha = await fetch(`/api/sealevel/ssha?lat=${lat}&lon=${lon}`).then(r => r.json());
+      alert(`Coordenadas: ${lat.toFixed(4)}, ${lon.toFixed(4)}\nPrecipitación: ${precip?.data?.precip || 'N/A'}\nSSHA: ${ssha?.data?.ssha || 'N/A'}`);
+    }} />
+  </div>
+  <script>
+    // Simple toggle entre mapas
+    const btn3d = document.getElementById('btn-3d');
+    const btnosm = document.getElementById('btn-osm');
+    const mapContainer = document.getElementById('map-container');
+    btn3d.onclick = () => {
+      mapContainer.innerHTML = `<Earth3DViewer client:only=\"react\" />`;
+      // Recarga la página para forzar el render del componente React
+      location.reload();
+    };
+    btnosm.onclick = () => {
+      mapContainer.innerHTML = `<EarthOSMMap client:only=\"react\" />`;
+      location.reload();
+    };
+  </script>
+
 </Layout>

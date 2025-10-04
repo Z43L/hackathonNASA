@@ -9,9 +9,13 @@
     "astro": "astro"
   },
   "dependencies": {
+    "@astrojs/react": "^4.4.0",
     "astro": "^5.13.9",
+    "cesium": "^1.134.0",
     "leaflet": "^1.9.4",
     "leaflet-draw": "^1.0.4",
-    "leaflet-tilelayer-wmts": "^1.0.0"
+    "leaflet-tilelayer-wmts": "^1.0.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
   }
 }

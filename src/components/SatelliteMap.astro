@@ -51,6 +51,49 @@ const {
     <div class="sidebar">
       <div class="section">
         <div class="section-title">
+          <i class="fas fa-cloud-showers-heavy"></i>
+          Precipitación Real (IMERG)
+        </div>
+        <div style="margin-bottom: 8px;">
+          <label for="precipDate">Fecha:</label>
+          <input type="date" id="precipDate" value="2023-01-01" style="width: 120px;" />
+        </div>
+        <div style="margin-bottom: 8px;">
+          <label for="precipBbox">Región (bbox):</label>
+          <input type="text" id="precipBbox" value="-9.5,36,3.5,44" style="width: 140px;" />
+        </div>
+        <button class="control-btn" style="width: 100%;" id="updatePrecipBtn">
+          <i class="fas fa-sync-alt"></i> Actualizar Precipitación
+        </button>
+      </div>
+      <!-- SSHA controls inserted here -->
+      <div class="section">
+        <div class="section-title">
+          <i class="fas fa-water"></i>
+          Anomalía Nivel del Mar (SSHA)
+        </div>
+        <div style="margin-bottom: 8px;">
+          <label for="sshaRegion">Región:</label>
+          <select id="sshaRegion" style="width: 120px;">
+            <option value="global">Global</option>
+            <option value="mediterranean">Mediterráneo</option>
+            <option value="caribbean">Caribe</option>
+            <option value="north_atlantic">Atlántico Norte</option>
+            <option value="pacific_tropical">Pacífico Tropical</option>
+            <option value="gulf_mexico">Golfo de México</option>
+            <option value="arctic">Ártico</option>
+            <option value="antarctic">Antártico</option>
+          </select>
+        </div>
+        <div style="margin-bottom: 8px;">
+          <label for="sshaDate">Fecha:</label>
+          <input type="date" id="sshaDate" value="2023-01-01" style="width: 120px;" />
+        </div>
+        <button class="control-btn" style="width: 100%;" id="updateSshaBtn">
+          <i class="fas fa-sync-alt"></i> Actualizar SSHA
+        </button>
+      </div>
+        <div class="section-title">
           <i class="fas fa-layer-group"></i>
           Capas de {planet.charAt(0).toUpperCase() + planet.slice(1)}
         </div>
@@ -254,6 +297,130 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 class SatelliteMapManager {
+  // Mostrar info de precipitación y SSHA al hacer clic en la Tierra
+  async handleEarthMapClick(e) {
+    const { lat, lng } = e.latlng;
+    // Mostrar loading
+    this.showLoading(true);
+    let precip = null;
+    let ssha = null;
+    let precipError = null;
+    let sshaError = null;
+    try {
+      // Consultar precipitación
+      const precipResp = await fetch(`/api/precipitation/real?lat=${lat}&lon=${lng}`);
+      const precipData = await precipResp.json();
+      if (precipData.success && precipData.data) {
+        precip = precipData.data.precip || precipData.data.value || null;
+      } else {
+        precipError = precipData.error?.message || 'No disponible';
+      }
+    } catch (err) {
+      precipError = 'Error API precipitación';
+    }
+    try {
+      // Consultar SSHA (mar más cercano)
+      const sshaResp = await fetch(`/api/sealevel/ssha?lat=${lat}&lon=${lng}`);
+      const sshaData = await sshaResp.json();
+      if (sshaData.success && sshaData.data) {
+        ssha = sshaData.data.ssha || sshaData.data.value || null;
+      } else {
+        sshaError = sshaData.error?.message || 'No disponible';
+      }
+    } catch (err) {
+      sshaError = 'Error API SSHA';
+    }
+    this.showLoading(false);
+    // Construir popup
+    let html = `<b>Coordenadas:</b> ${lat.toFixed(4)}, ${lng.toFixed(4)}<br/>`;
+    if (precip !== null) {
+      html += `<b>Precipitación:</b> ${precip} mm/h`;
+    } else {
+      html += `<b>Precipitación:</b> <span style='color:#f00;'>${precipError || 'No disponible'}</span>`;
+    }
+    html += '<br/>';
+    if (ssha !== null) {
+      html += `<b>SSHA:</b> ${ssha} m`;
+    } else {
+      html += `<b>SSHA:</b> <span style='color:#f00;'>${sshaError || 'No disponible'}</span>`;
+    }
+    L.popup().setLatLng([lat, lng]).setContent(html).openOn(this.map);
+  }
+  async fetchAndShowSSHAHeatmap(region = 'global', date = null) {
+    document.getElementById('loadingIndicator').style.display = 'block';
+    try {
+      let url = '/api/sealevel/ssha?region=' + encodeURIComponent(region);
+      if (date) url += '&start_date=' + date + '&end_date=' + date;
+      const resp = await fetch(url);
+      const data = await resp.json();
+      if (!data.success) throw new Error(data.error?.message || 'Error API');
+      const { ssha_grid, lat, lon } = data.data;
+      const points = [];
+      for (let i = 0; i < lat.length; i++) {
+        for (let j = 0; j < lon.length; j++) {
+          const value = ssha_grid[i][j];
+          if (Math.abs(value) > 0.001) points.push([lat[i], lon[j], value]);
+        }
+      }
+      if (!this.sshaHeatLayer) {
+        this.sshaHeatLayer = L.heatLayer(points, {
+          radius: 18,
+          blur: 22,
+          maxZoom: 7,
+          gradient: {0.1: '#00f', 0.5: '#0ff', 1.0: '#f0f'}
+        });
+        this.map.addLayer(this.sshaHeatLayer);
+      } else {
+        this.sshaHeatLayer.setLatLngs(points);
+        if (!this.map.hasLayer(this.sshaHeatLayer)) this.map.addLayer(this.sshaHeatLayer);
+      }
+    } catch (e) {
+      alert('Error cargando datos SSHA: ' + e.message);
+    } finally {
+      document.getElementById('loadingIndicator').style.display = 'none';
+    }
+  }
+  async fetchAndShowPrecipitationHeatmap(date = null, bbox = null) {
+    // Mostrar loading
+    document.getElementById('loadingIndicator').style.display = 'block';
+    try {
+      // Construir URL
+      let url = '/api/precipitation/real';
+      const params = [];
+      if (date) params.push(`date=${date}`);
+      if (bbox) params.push(`bbox=${bbox.join(',')}`);
+      if (params.length > 0) url += '?' + params.join('&');
+      const resp = await fetch(url);
+      const data = await resp.json();
+      if (!data.success) throw new Error(data.error?.message || 'Error API');
+      const { precip_grid, lat, lon } = data.data;
+      // Convertir grilla a puntos [lat, lon, valor]
+      const points = [];
+      for (let i = 0; i < lat.length; i++) {
+        for (let j = 0; j < lon.length; j++) {
+          const value = precip_grid[i][j];
+          if (value > 0) points.push([lat[i], lon[j], value]);
+        }
+      }
+      // Crear heatmap
+      if (!this.precipHeatLayer) {
+        this.precipHeatLayer = L.heatLayer(points, {
+          radius: 18,
+          blur: 22,
+          maxZoom: 7,
+          gradient: {0.1: '#00f', 0.5: '#0f0', 1.0: '#f00'}
+        });
+        this.map.addLayer(this.precipHeatLayer);
+      } else {
+        this.precipHeatLayer.setLatLngs(points);
+        if (!this.map.hasLayer(this.precipHeatLayer)) this.map.addLayer(this.precipHeatLayer);
+      }
+    } catch (e) {
+      alert('Error cargando datos de precipitación: ' + e.message);
+    } finally {
+      document.getElementById('loadingIndicator').style.display = 'none';
+    }
+  }
   constructor(planet = "mars", planetConfig = null) {
     this.planet = planet.toLowerCase();
     this.planetConfig = planetConfig;
@@ -577,12 +744,23 @@ class SatelliteMapManager {
   }
 
   initMap() {
+    // Para la Tierra, centro estándar [0, 0] y zoom 2, para otros planetas [0, 180] y zoom 1
+    let center = [0, 180];
+    let zoom = 1;
+    if (this.planet === 'earth') {
+      center = [0, 0];
+      zoom = 2;
+    }
     this.map = L.map("map", {
-      center: [0, 180],
-      zoom: 1,
+      center: center,
+      zoom: zoom,
       zoomControl: false,
       preferCanvas: true,
       attributionControl: false,
+      worldCopyJump: false,
+      continuousWorld: false,
+      maxBounds: this.planet === 'earth' ? [[-85, -180], [85, 180]] : undefined,
+      maxBoundsViscosity: this.planet === 'earth' ? 1.0 : 0.0
     });
 
     L.control.zoom({ position: "bottomleft" }).addTo(this.map);
@@ -597,6 +775,7 @@ class SatelliteMapManager {
         maxNativeZoom: config.zoom || 5,
         noWrap: true,
         crossOrigin: true,
+        wrapX: this.planet === 'earth' ? false : undefined,
         filter: [
           "hue-rotate(0deg)",
           "contrast(100%)",
@@ -618,6 +797,16 @@ class SatelliteMapManager {
     this.updateActiveLayersCount();
     this.updateMapInfo();
     this.createLayersList();
+
+    // Forzar límites estrictos para la Tierra
+    if (this.planet === 'earth') {
+      this.map.setMaxBounds([[-85, -180], [85, 180]]);
+    }
+
+    // Si es la Tierra, activar click interactivo
+    if (this.planet === 'earth') {
+      this.map.on('click', (e) => this.handleEarthMapClick(e));
+    }
   }
 
   initDrawControl() {
@@ -2162,9 +2351,28 @@ if (
     }
 
     if (typeof L !== "undefined" && L.Draw) {
-      const satelliteMap = new SatelliteMapManager(planet, planetConfig);
-      satelliteMap.init();
-      window.satelliteMap = satelliteMap;
+        const satelliteMap = new SatelliteMapManager(planet, planetConfig);
+        satelliteMap.init();
+        // Cargar heatmap de precipitación real al iniciar
+        satelliteMap.fetchAndShowPrecipitationHeatmap();
+        window.satelliteMap = satelliteMap;
+        // UI: actualizar heatmap precipitación
+        document.getElementById('updatePrecipBtn').onclick = () => {
+          const date = document.getElementById('precipDate').value;
+          const bboxStr = document.getElementById('precipBbox').value;
+          let bbox = bboxStr.split(',').map(Number);
+          if (bbox.length !== 4 || bbox.some(isNaN)) {
+            alert('Bbox inválido. Usa formato: west,south,east,north');
+            return;
+          }
+          satelliteMap.fetchAndShowPrecipitationHeatmap(date, bbox);
+        };
+        // UI: actualizar heatmap SSHA
+        document.getElementById('updateSshaBtn').onclick = () => {
+          const region = document.getElementById('sshaRegion').value;
+          const date = document.getElementById('sshaDate').value;
+          satelliteMap.fetchAndShowSSHAHeatmap(region, date);
+        };
     } else {
       console.warn(
         "Waiting for Leaflet and Leaflet.draw to be available...",
