@@ -58,6 +58,9 @@ checkpoints/
 checkpoints_regression_test/
 trained_models/
 
+# Allow essential backend files
+!backend/
+
 # Keep only essential models for inference
 !backend/models/**/*.pth
 !backend/models/**/*.pt
