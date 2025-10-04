@@ -1,2 +1,90 @@
-# Created by venv; see https://docs.python.org/3/library/venv.html
-*
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+venv-dsa/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+
+# Data directories (large files)
+data/
+raw_data_large/
+processed_data_large/
+datasets/
+nasa_data_functional/
+
+# Model checkpoints (keep only essential models)
+checkpoints/
+checkpoints_regression_test/
+trained_models/
+
+# Keep only essential models for inference
+!backend/models/**/*.pth
+!backend/models/**/*.pt
+!backend/models/**/*.pkl
+!backend/models/**/*.safetensors
+!trained_models_large/*.pkl
+!trained_models_large/*.safetensors
+!test_model.*
+
+# Documentation and config
+!README*.md
+!*.json
+!*.yml
+!*.yaml
+!requirements.txt
+!package.json
+!tsconfig.json
+!astro.config.mjs
+
+# Scripts (keep important ones)
+!scripts/*.py
+!backend/*.py
+!*.sh
+
+# Frontend
+!src/
+!public/
+!astro.config.mjs
+!package.json
+!tsconfig.json
